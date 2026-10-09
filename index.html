@@ -1,0 +1,531 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ผังคลังสินค้า 3 มิติ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: full-bleed 3D stage; one column of overlays at top-left (title, capacity legend, selected zone); control bar docked at the bottom. */
+:root{
+  --sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --bg:#E3E7EB; --floor:#D2D8DE; --pad:#C4CBD3; --pad2:#C3D3D8; --bay:#D9D5C6;
+  --line:#7C8895; --ink:#18212A; --muted:#566371;
+  --panel:rgba(246,248,249,.9); --panel-line:#C2CAD2; --accent:#D6246E;
+  --beer:#E39A2D; --can:#7A74C9; --soda:#7DB542; --water:#2FAFCB;
+  --wood:#B48A5A; --office:#9BA6B1; --hemi:.9; --sun:.55;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11171D; --floor:#1C242C; --pad:#27323C; --pad2:#243640; --bay:#322F26;
+    --line:#4D5C6A; --ink:#E6EBEF; --muted:#94A2AF;
+    --panel:rgba(22,29,36,.88); --panel-line:#35424E; --accent:#FF5C9A;
+    --beer:#F0A93C; --can:#9A94E6; --soda:#93CC58; --water:#4BC5E0;
+    --wood:#94714A; --office:#56626E; --hemi:.62; --sun:.5; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11171D; --floor:#1C242C; --pad:#27323C; --pad2:#243640; --bay:#322F26;
+  --line:#4D5C6A; --ink:#E6EBEF; --muted:#94A2AF;
+  --panel:rgba(22,29,36,.88); --panel-line:#35424E; --accent:#FF5C9A;
+  --beer:#F0A93C; --can:#9A94E6; --soda:#93CC58; --water:#4BC5E0;
+  --wood:#94714A; --office:#56626E; --hemi:.62; --sun:.5; color-scheme:dark;
+}
+
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 14px/1.45 var(--sans);overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.stage{position:relative;height:100%;min-height:0}
+#gl{position:absolute;inset:0}
+#gl canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#gl canvas:active{cursor:grabbing}
+.nogl{margin:0;padding:24px 16px;color:var(--muted)}
+.labels{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:11px;line-height:1.3;padding:2px 7px;border-radius:4px;background:var(--panel);border:1px solid var(--panel-line);color:var(--ink)}
+.tag.num{padding:0;background:none;border:0;font:500 11px/1 var(--mono);color:var(--muted)}
+
+.card{background:var(--panel);border:1px solid var(--panel-line);border-radius:10px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.side{position:absolute;left:16px;top:16px;width:min(330px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;max-height:calc(100% - 40px - var(--dock-h,64px));overflow:auto;pointer-events:none}
+.side>*{pointer-events:auto;flex:none}
+
+.head{padding:12px 14px}
+.eyebrow{margin:0;font:500 11px/1.2 var(--mono);letter-spacing:.08em;color:var(--muted)}
+h1{margin:4px 0 0;font-size:19px;line-height:1.25;font-weight:600;text-wrap:balance}
+.hint{margin:4px 0 0;color:var(--muted);font-size:12.5px}
+
+.legend summary{list-style:none;cursor:pointer;padding:10px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;min-height:24px}
+.legend summary::-webkit-details-marker{display:none}
+.legend summary b{font:500 15px/1 var(--mono);font-variant-numeric:tabular-nums}
+.legend summary span{color:var(--muted);font-size:13px}
+.legend summary::after{content:"+";font:500 15px/1 var(--mono);color:var(--muted)}
+.legend[open] summary::after{content:"−"}
+.legend ul{list-style:none;margin:0;padding:0 8px 8px;display:flex;flex-direction:column;gap:2px}
+.cat{width:100%;display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:2px 10px;align-items:center;text-align:left;background:none;border:0;border-radius:6px;padding:7px 8px;min-height:44px;cursor:pointer}
+.cat:hover{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.cat i{grid-row:span 2;width:14px;height:14px;border-radius:3px;background:var(--c)}
+.cat .n{font-weight:500}
+.cat .p{font:500 13px/1 var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.cat .m{grid-column:2 / 4;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cat[aria-pressed="false"]{opacity:.42}
+.cat[aria-pressed="false"] .n{text-decoration:line-through}
+.legend .foot{margin:0;padding:8px 16px 12px;border-top:1px solid var(--panel-line);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.info{padding:12px 14px;position:relative}
+.info .kicker{margin:0;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.info .kicker i{width:10px;height:10px;border-radius:2px;background:var(--c,var(--line))}
+.info h2{margin:3px 28px 0 0;font-size:16px;line-height:1.3;font-weight:600;text-wrap:balance}
+.info dl{margin:10px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.info dt{font-size:11.5px;color:var(--muted)}
+.info dd{margin:0;font:500 14px/1.3 var(--mono);font-variant-numeric:tabular-nums}
+.info dd.th{font-family:var(--sans);font-weight:500}
+.info .wide{grid-column:1 / -1}
+.info .x{position:absolute;top:6px;right:6px;width:32px;height:32px;border:0;border-radius:6px;background:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1}
+.info .x:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.info .empty{margin:0;color:var(--muted)}
+
+.dock{position:absolute;left:16px;right:16px;bottom:16px;display:flex;justify-content:center;pointer-events:none}
+.bar{pointer-events:auto;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:center;padding:8px 10px;max-width:100%}
+.grp{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.grp>span{font-size:12px;color:var(--muted);padding:0 4px}
+.seg{min-height:36px;padding:0 11px;border:1px solid transparent;border-radius:6px;background:none;cursor:pointer;white-space:nowrap;font-size:13px}
+.seg:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.seg[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.count{font:500 12px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;padding:0 4px}
+
+@media (max-width:640px){
+  .hint{display:none}
+  h1{font-size:16px}
+  .head{padding:10px 12px}
+  .info dl{gap:6px 10px}
+  .bar{gap:4px 10px;padding:6px 8px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="stage">
+  <div id="gl" role="img" aria-label="โมเดล 3 มิติของคลังสินค้า หมุนและซูมได้"></div>
+  <div class="labels" id="labels"></div>
+
+  <div class="side" id="side">
+    <header class="card head">
+      <p class="eyebrow">ตัวอย่างจุดวางพาเลท · ซ้อน 3 ชั้น</p>
+      <h1>ผังคลังสินค้า 3 มิติ</h1>
+      <p class="hint">ลากเพื่อหมุน · เลื่อนหรือบีบเพื่อซูม · แตะที่แถวหรือโซนเพื่อดูรายละเอียด</p>
+    </header>
+
+    <details class="card legend" id="legend">
+      <summary><b id="totalCap">1,386</b><span>พาเลทที่วางได้ทั้งหมด</span></summary>
+      <ul id="legendList"></ul>
+      <p class="foot" id="legendFoot"></p>
+    </details>
+
+    <section class="card info" id="info" aria-live="polite">
+      <button class="x" id="infoClose" type="button" aria-label="ปิดรายละเอียด">×</button>
+      <p class="kicker"><i id="iDot"></i><span id="iKind"></span></p>
+      <h2 id="iName"></h2>
+      <dl id="iDl"></dl>
+      <p class="empty" id="iEmpty" hidden>แตะที่แถวหรือโซนในภาพเพื่อดูรายละเอียด</p>
+    </section>
+  </div>
+
+  <div class="dock" id="dock">
+    <div class="card bar">
+      <div class="grp" role="group" aria-label="มุมมอง">
+        <button class="seg" type="button" data-view="iso" aria-pressed="true">มุมเฉียง</button>
+        <button class="seg" type="button" data-view="top" aria-pressed="false">มุมสูง</button>
+        <button class="seg" type="button" data-view="rows1" aria-pressed="false">แถว 1–10</button>
+        <button class="seg" type="button" data-view="rows2" aria-pressed="false">แถว 11–18</button>
+        <button class="seg" type="button" data-view="mid" aria-pressed="false">โซนกลาง</button>
+      </div>
+      <div class="grp" role="group" aria-label="จำนวนชั้นที่แสดง">
+        <span>ชั้น</span>
+        <button class="seg" type="button" data-lv="1" aria-pressed="false">1</button>
+        <button class="seg" type="button" data-lv="2" aria-pressed="false">2</button>
+        <button class="seg" type="button" data-lv="3" aria-pressed="true">3</button>
+      </div>
+      <div class="grp">
+        <button class="seg" type="button" id="tgLabels" aria-pressed="true">ชื่อโซน</button>
+        <span class="count" id="count"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+'use strict';
+var glEl=document.getElementById('gl');
+if(!window.THREE||!THREE.OrbitControls){glEl.innerHTML='<p class="nogl">โหลดตัวแสดงภาพ 3 มิติไม่สำเร็จ ลองรีเฟรชหน้านี้</p>';return;}
+var T=THREE, renderer;
+try{renderer=new T.WebGLRenderer({antialias:true});}catch(e){glEl.innerHTML='<p class="nogl">เบราว์เซอร์นี้เปิดภาพ 3 มิติไม่ได้ ลองใช้ Chrome หรือ Safari รุ่นล่าสุด</p>';return;}
+
+/* ---------- data: zones read from the floor plan (1 unit = 10 px of the plan) ---------- */
+var PX=10, CX=722, CY=435, LV=3;
+var PH=.16, GH=1.22, STEP=PH+GH+.04, BASE=.04;
+function gx(p){return (p-CX)/PX} function gz(p){return (p-CY)/PX}
+var CATS={
+  beer:{name:'เบียร์ลังใหญ่',per:60,unit:'ลัง'},
+  can:{name:'เบียร์กระป๋อง (พิเศษ)',per:150,unit:'ถาด'},
+  soda:{name:'โซดา',per:40,unit:'ลัง'},
+  water:{name:'น้ำ',per:40,unit:'ลัง'}
+};
+var zones=[];
+function Z(o){o.id=zones.length;zones.push(o);return o}
+function fmt(n){return n.toLocaleString('en-US')}
+
+Z({kind:'office',name:'ออฟฟิศ',x0:33,y0:100,x1:1412,y1:118,h:2.6});
+Z({kind:'area',name:'จุดซักล้าง',x0:33,y0:136,x1:173,y1:245});
+Z({kind:'area',name:'พัดลม โต๊ะเยี่ยม',x0:242,y0:136,x1:460,y1:226});
+Z({kind:'area',name:'จุดซ่อมสินค้า',x0:995,y0:443,x1:1114,y1:516});
+Z({kind:'area',name:'อะไหล่/หน่วยย่อยสินค้า',x0:1114,y0:443,x1:1193,y1:516});
+Z({kind:'stairs',name:'บันได',x0:1213,y0:443,x1:1412,y1:516,h:4});
+Z({kind:'office',name:'ออฟฟิศ',x0:1213,y0:533,x1:1412,y1:624,h:3.2});
+Z({kind:'bay',name:'ลานโหลดรถปลึก1',x0:33,y0:642,x1:282,y1:769});
+Z({kind:'bay',name:'ลานโหลดรถปลึก2',x0:282,y0:642,x1:519,y1:769});
+Z({kind:'bay',name:'ลานโหลดรถปลึก3',x0:519,y0:642,x1:758,y1:769});
+Z({kind:'bay',name:'ลานโหลด',x0:758,y0:642,x1:1412,y1:769});
+
+function rows(from,to,x0,sx0,x1,y0,step){
+  for(var n=from;n<=to;n++){
+    var y=y0+(n-from)*step;
+    Z({kind:'stack',cat:'beer',pl:42,row:n,name:'แถวที่ '+n,x0:x0,sx0:sx0,x1:x1,y0:y,y1:y+step,lines:2,per:7});
+  }
+}
+rows(1,10,33,54,460,262,36.2);
+rows(11,18,995,1016,1412,136,36.125);
+rows(19,22,519,540,936,262,36.25);
+Z({kind:'stack',cat:'can',pl:110,name:'จุดวางสินค้ากระป๋อง เลม่อน และลีโอ สิงห์ กระป๋อง',short:'กระป๋อง เลม่อน · ลีโอ · สิงห์',x0:519,sx0:519,x1:936,y0:136,y1:245,lines:3,per:13});
+Z({kind:'stack',cat:'can',pl:96,name:'จุดวางสินค้ากระป๋อง',short:'จุดวางสินค้ากระป๋อง',x0:519,sx0:519,x1:936,y0:407,y1:480,lines:2,per:16});
+Z({kind:'stack',cat:'water',pl:128,name:'น้ำ',short:'น้ำ',x0:519,sx0:519,x1:737,y0:497,y1:624,lines:4,per:11});
+Z({kind:'stack',cat:'soda',pl:128,name:'โซดา',short:'โซดา',x0:738,sx0:738,x1:936,y0:497,y1:624,lines:4,per:11});
+
+/* one record per pallet level */
+var inst=[], GAP=3;
+zones.forEach(function(z){
+  if(z.kind!=='stack')return;
+  var P=Math.ceil(z.pl/LV); z.positions=P; z.rem=z.pl-LV*(P-1);
+  var W=(z.x1-z.sx0)/z.per, H=(z.y1-z.y0)/z.lines, idx=0, l, k, v, levels;
+  for(l=0;l<z.lines&&idx<P;l++){
+    for(k=0;k<z.per&&idx<P;k++){
+      levels=(idx===P-1)?z.rem:LV;
+      for(v=0;v<levels;v++){
+        inst.push({z:z.id,cat:z.cat,cx:gx(z.sx0+(k+.5)*W),cz:gz(z.y0+(l+.5)*H),w:(W-GAP)/PX,d:(H-GAP)/PX,lvl:v,j:((idx*7919+v*104729+z.id*31337)%997)/997});
+      }
+      idx++;
+    }
+  }
+});
+
+/* ---------- scene ---------- */
+var scene=new T.Scene();
+var camera=new T.PerspectiveCamera(35,1,1,900);
+var dirty=true;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFSoftShadowMap;
+glEl.appendChild(renderer.domElement);
+
+var hemi=new T.HemisphereLight(0xffffff,0x8899aa,.9); scene.add(hemi);
+var sun=new T.DirectionalLight(0xffffff,.55); sun.position.set(-45,95,55); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+var sc=sun.shadow.camera; sc.left=-82; sc.right=82; sc.top=52; sc.bottom=-52; sc.near=10; sc.far=260; sun.shadow.bias=-.0006;
+scene.add(sun); scene.add(sun.target);
+
+var controls=new T.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=.09; controls.screenSpacePanning=true;
+controls.minDistance=14; controls.maxDistance=280; controls.maxPolarAngle=Math.PI/2-.05;
+controls.addEventListener('change',function(){dirty=true});
+
+var box=new T.BoxGeometry(1,1,1);
+var floorMat=new T.MeshLambertMaterial({color:0xcccccc});
+var floorMinX=gx(33)-3, floorMaxX=gx(1412)+3, floorMinZ=gz(100)-3, floorMaxZ=gz(769)+3;
+var floor=new T.Mesh(box,floorMat);
+floor.scale.set(floorMaxX-floorMinX,.6,floorMaxZ-floorMinZ);
+floor.position.set((floorMaxX+floorMinX)/2,-.3,(floorMaxZ+floorMinZ)/2);
+floor.receiveShadow=true; scene.add(floor);
+
+var pickables=[], themed=[];
+function bounds(z){return {x0:gx(z.x0),x1:gx(z.x1),z0:gz(z.y0),z1:gz(z.y1)}}
+function topOf(z){
+  if(z.kind==='stack')return BASE+LV*STEP;
+  if(z.kind==='office'||z.kind==='stairs')return z.h;
+  return z.kind==='area'?.5:.12;
+}
+
+/* pads, offices, stairs */
+var padToken={stack:'--pad',area:'--pad2',bay:'--bay'};
+zones.forEach(function(z){
+  var b=bounds(z), w=b.x1-b.x0, d=b.z1-b.z0, cx=(b.x0+b.x1)/2, cz=(b.z0+b.z1)/2, m;
+  if(z.kind==='office'){
+    m=new T.Mesh(box,new T.MeshLambertMaterial({color:0xaaaaaa}));
+    m.scale.set(w-.4,z.h,d-.2); m.position.set(cx,z.h/2,cz); m.castShadow=true; m.receiveShadow=true;
+    themed.push({mat:m.material,token:'--office'});
+  }else if(z.kind==='stairs'){
+    var n=8, sw=(w-.4)/n, k, s;
+    var g=new T.Group();
+    for(k=0;k<n;k++){
+      s=new T.Mesh(box,new T.MeshLambertMaterial({color:0xaaaaaa}));
+      var hh=(k+1)*z.h/n;
+      s.scale.set(sw-.05,hh,d-.8); s.position.set(b.x0+.2+sw*(k+.5),hh/2,cz);
+      s.castShadow=true; s.receiveShadow=true; s.userData.zone=z.id; g.add(s); pickables.push(s);
+      themed.push({mat:s.material,token:'--office'});
+    }
+    scene.add(g);
+    m=new T.Mesh(box,new T.MeshLambertMaterial({color:0xaaaaaa}));
+    m.scale.set(w-.2,.04,d-.2); m.position.set(cx,.02,cz);
+    themed.push({mat:m.material,token:'--pad2'});
+  }else{
+    var hgt=z.kind==='area'?.12:(z.kind==='bay'?.03:.04);
+    m=new T.Mesh(box,new T.MeshLambertMaterial({color:0xaaaaaa}));
+    m.scale.set(w-.2,hgt,d-.2); m.position.set(cx,hgt/2,cz); m.receiveShadow=true;
+    themed.push({mat:m.material,token:padToken[z.kind]});
+  }
+  m.userData.zone=z.id; scene.add(m); pickables.push(m);
+});
+
+/* outlines: solid for work areas, dashed for loading bays */
+function seg(arr,x0,z0,x1,z1,y){arr.push(x0,y,z0,x1,y,z1)}
+function rect(arr,b,y){seg(arr,b.x0,b.z0,b.x1,b.z0,y);seg(arr,b.x1,b.z0,b.x1,b.z1,y);seg(arr,b.x1,b.z1,b.x0,b.z1,y);seg(arr,b.x0,b.z1,b.x0,b.z0,y)}
+var solid=[], dashed=[];
+zones.forEach(function(z){
+  var b=bounds(z);
+  if(z.kind==='bay'){rect(dashed,b,.07);return}
+  if(z.kind==='office'||z.kind==='stairs')return;
+  rect(solid,b,.14);
+  if(z.row){seg(solid,gx(z.sx0),b.z0,gx(z.sx0),b.z1,.14)}
+});
+function lineObj(arr,mat){
+  var g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(arr,3));
+  var l=new T.LineSegments(g,mat); if(mat.isLineDashedMaterial)l.computeLineDistances(); scene.add(l); return l;
+}
+var solidMat=new T.LineBasicMaterial({color:0x777777});
+var dashMat=new T.LineDashedMaterial({color:0x777777,dashSize:1.2,gapSize:.9});
+lineObj(solid,solidMat); lineObj(dashed,dashMat);
+
+/* pallets + goods (instanced) */
+var dummy=new T.Object3D(), col=new T.Color();
+var palletMesh=new T.InstancedMesh(box,new T.MeshLambertMaterial({color:0xffffff}),inst.length);
+palletMesh.castShadow=true; palletMesh.receiveShadow=true;
+palletMesh.userData.zones=inst.map(function(o){return o.z});
+scene.add(palletMesh); pickables.push(palletMesh);
+var goods={}, goodsList={};
+Object.keys(CATS).forEach(function(c){
+  var list=inst.filter(function(o){return o.cat===c});
+  list.forEach(function(o,i){o.gi=i});
+  var m=new T.InstancedMesh(box,new T.MeshLambertMaterial({color:0xffffff}),list.length);
+  m.castShadow=true; m.receiveShadow=true; m.userData.zones=list.map(function(o){return o.z});
+  scene.add(m); pickables.push(m); goods[c]=m; goodsList[c]=list;
+});
+inst.forEach(function(o,i){o.pi=i});
+
+var show=3, catOn={beer:true,can:true,soda:true,water:true};
+function layout(){
+  inst.forEach(function(o){
+    var on=o.lvl<show&&catOn[o.cat], y=BASE+o.lvl*STEP, e=1e-4;
+    dummy.position.set(o.cx,y+PH/2,o.cz); dummy.scale.set(on?o.w:e,on?PH:e,on?o.d:e); dummy.updateMatrix();
+    palletMesh.setMatrixAt(o.pi,dummy.matrix);
+    dummy.position.set(o.cx,y+PH+GH/2,o.cz); dummy.scale.set(on?o.w*.94:e,on?GH:e,on?o.d*.9:e); dummy.updateMatrix();
+    goods[o.cat].setMatrixAt(o.gi,dummy.matrix);
+  });
+  palletMesh.instanceMatrix.needsUpdate=true;
+  Object.keys(goods).forEach(function(c){goods[c].instanceMatrix.needsUpdate=true});
+  var n=inst.filter(function(o){return o.lvl<show&&catOn[o.cat]}).length;
+  document.getElementById('count').textContent='แสดง '+fmt(n)+' พาเลท';
+  dirty=true;
+}
+
+/* ---------- theme ---------- */
+var rootStyle=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()};
+var tok=function(n){return new T.Color(rootStyle(n))};
+function applyTheme(){
+  var bg=tok('--bg'); scene.background=bg;
+  floorMat.color.copy(tok('--floor'));
+  themed.forEach(function(t){t.mat.color.copy(tok(t.token))});
+  solidMat.color.copy(tok('--line')); dashMat.color.copy(tok('--line'));
+  hemi.intensity=parseFloat(rootStyle('--hemi'))||.9; sun.intensity=parseFloat(rootStyle('--sun'))||.55;
+  var wood=tok('--wood'), cc={};
+  Object.keys(CATS).forEach(function(c){cc[c]=tok('--'+c)});
+  inst.forEach(function(o){
+    col.copy(wood).offsetHSL(0,0,(o.j-.5)*.07); palletMesh.setColorAt(o.pi,col);
+    col.copy(cc[o.cat]).offsetHSL(0,0,(((o.j*5)%1)-.5)*.07); goods[o.cat].setColorAt(o.gi,col);
+  });
+  palletMesh.instanceColor.needsUpdate=true;
+  Object.keys(goods).forEach(function(c){goods[c].instanceColor.needsUpdate=true});
+  selVolMat.color.copy(tok('--accent')); selEdgeMat.color.copy(tok('--accent'));
+  dirty=true;
+}
+
+/* ---------- selection ---------- */
+var selVolMat=new T.MeshBasicMaterial({color:0xff0066,transparent:true,opacity:.15,depthWrite:false});
+var selEdgeMat=new T.LineBasicMaterial({color:0xff0066});
+var sel=new T.Group();
+sel.add(new T.Mesh(box,selVolMat));
+sel.add(new T.LineSegments(new T.EdgesGeometry(box),selEdgeMat));
+sel.visible=false; scene.add(sel);
+
+var infoEl=document.getElementById('info'), selected=null;
+function dl(label,val,cls){return '<div'+(cls&&cls.indexOf('wide')>-1?' class="wide"':'')+'><dt>'+label+'</dt><dd'+(cls&&cls.indexOf('th')>-1?' class="th"':'')+'>'+val+'</dd></div>'}
+var KIND={office:'ออฟฟิศ',area:'พื้นที่ใช้งาน',bay:'ลานโหลดสินค้า',stairs:'บันได'};
+function select(id){
+  var z=id==null?null:zones[id]; selected=z;
+  var empty=document.getElementById('iEmpty'), dlEl=document.getElementById('iDl');
+  if(!z){
+    sel.visible=false; empty.hidden=false; dlEl.innerHTML='';
+    document.getElementById('iKind').textContent='รายละเอียด'; document.getElementById('iName').textContent='ยังไม่ได้เลือก';
+    document.getElementById('iDot').style.background='var(--line)'; dirty=true; return;
+  }
+  empty.hidden=true;
+  var b=bounds(z), h=topOf(z)+.2;
+  sel.scale.set(b.x1-b.x0,h,b.z1-b.z0); sel.position.set((b.x0+b.x1)/2,h/2,(b.z0+b.z1)/2); sel.visible=true;
+  var html='';
+  if(z.kind==='stack'){
+    var c=CATS[z.cat];
+    document.getElementById('iKind').textContent=c.name;
+    document.getElementById('iDot').style.background='var(--'+z.cat+')';
+    html+=dl('พาเลททั้งหมด',z.pl+' PL');
+    html+=dl('ตำแหน่งบนพื้น',z.positions);
+    html+=dl('การวาง',z.row?'บน 7 · ล่าง 7':z.lines+' แถว × '+z.per,'th');
+    html+=dl('ซ้อน',LV+' ชั้น','th');
+    var f=z.rem===LV?z.positions+' ตำแหน่ง × '+LV+' ชั้น = '+z.pl+' PL':(z.positions-1)+' × '+LV+' ชั้น + 1 × '+z.rem+' ชั้น = '+z.pl+' PL';
+    html+=dl('จำนวน',f,'wide th');
+    html+=dl('สินค้า',fmt(z.pl*c.per)+' '+c.unit+' ('+c.per+' ต่อพาเลท)','wide th');
+  }else{
+    document.getElementById('iKind').textContent=KIND[z.kind];
+    document.getElementById('iDot').style.background='var(--line)';
+    html+=dl('ประเภท',KIND[z.kind],'wide th');
+  }
+  document.getElementById('iName').textContent=z.name;
+  dlEl.innerHTML=html; dirty=true;
+}
+document.getElementById('infoClose').addEventListener('click',function(){select(null)});
+
+/* ---------- labels ---------- */
+var labelsEl=document.getElementById('labels'), labels=[], showLabels=true;
+function tag(text,x,y,zz,cls){
+  var el=document.createElement('div'); el.className='tag'+(cls?' '+cls:''); el.textContent=text; labelsEl.appendChild(el);
+  labels.push({el:el,pos:new T.Vector3(x,y,zz)});
+}
+zones.forEach(function(z){
+  var b=bounds(z), cx=(b.x0+b.x1)/2, cz=(b.z0+b.z1)/2;
+  if(z.kind==='stack'){
+    if(z.row){tag(String(z.row),gx((z.x0+z.sx0)/2),.3,cz,'num')}
+    else{tag(z.short+' · '+z.pl+' PL',cx,topOf(z)+.8,cz)}
+  }else if(z.kind==='office'){tag(z.name,cx,z.h+.6,cz)}
+  else if(z.kind==='stairs'){tag(z.name,cx,z.h+.8,cz)}
+  else{tag(z.name,cx,.9,cz)}
+});
+var lv=new T.Vector3();
+function updateLabels(){
+  var w=glEl.clientWidth, h=glEl.clientHeight;
+  labels.forEach(function(L){
+    lv.copy(L.pos).project(camera);
+    var vis=showLabels&&lv.z>-1&&lv.z<1&&Math.abs(lv.x)<1.15&&Math.abs(lv.y)<1.15;
+    L.el.hidden=!vis;
+    if(vis)L.el.style.transform='translate('+((lv.x*.5+.5)*w).toFixed(1)+'px,'+((-lv.y*.5+.5)*h).toFixed(1)+'px) translate(-50%,-50%)';
+  });
+}
+
+/* ---------- camera views ---------- */
+var V3=function(x,y,z){return new T.Vector3(x,y,z)};
+var VIEWS={
+  iso:{target:V3(0,0,1),dir:V3(-.3,.8,.62),w:146,h:96},
+  top:{target:V3(0,0,0),dir:V3(0,1,.02),w:146,h:72},
+  rows1:{target:V3(-47.6,1,1),dir:V3(.15,.7,.7),w:46,h:44},
+  rows2:{target:V3(48.1,1,-15.5),dir:V3(-.15,.7,.7),w:44,h:38},
+  mid:{target:V3(.5,1,-5.5),dir:V3(-.1,.78,.62),w:44,h:60}
+};
+function viewPose(key){
+  var p=VIEWS[key], tf=Math.tan(T.MathUtils.degToRad(camera.fov/2));
+  var dist=Math.max((p.h/2)/tf,(p.w/2)/(tf*camera.aspect))*1.12;
+  return {pos:p.target.clone().addScaledVector(p.dir.clone().normalize(),dist),target:p.target.clone()};
+}
+var tw=null, curView='iso';
+function fly(key,instant){
+  var pose=viewPose(key); curView=key;
+  if(instant){camera.position.copy(pose.pos);controls.target.copy(pose.target);controls.update();dirty=true;return}
+  tw={t0:performance.now(),d:800,p0:camera.position.clone(),p1:pose.pos,g0:controls.target.clone(),g1:pose.target};
+}
+function stepTween(now){
+  if(!tw)return;
+  var k=Math.min(1,(now-tw.t0)/tw.d), e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+  camera.position.lerpVectors(tw.p0,tw.p1,e); controls.target.lerpVectors(tw.g0,tw.g1,e);
+  if(k>=1)tw=null; dirty=true;
+}
+controls.addEventListener('start',function(){tw=null; setView(null)});
+
+/* ---------- UI wiring ---------- */
+function setView(key){
+  document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===key))});
+}
+document.querySelectorAll('[data-view]').forEach(function(b){
+  b.addEventListener('click',function(){fly(b.dataset.view);setView(b.dataset.view)});
+});
+document.querySelectorAll('[data-lv]').forEach(function(b){
+  b.addEventListener('click',function(){
+    show=parseInt(b.dataset.lv,10);
+    document.querySelectorAll('[data-lv]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});
+    layout();
+  });
+});
+document.getElementById('tgLabels').addEventListener('click',function(e){
+  showLabels=!showLabels; e.currentTarget.setAttribute('aria-pressed',String(showLabels)); dirty=true;
+});
+
+var totals={}, totalAll=0;
+zones.forEach(function(z){if(z.kind==='stack'){totals[z.cat]=(totals[z.cat]||0)+z.pl;totalAll+=z.pl}});
+document.getElementById('totalCap').textContent=fmt(totalAll);
+var legendList=document.getElementById('legendList');
+['beer','can','soda','water'].forEach(function(c){
+  var li=document.createElement('li'), b=document.createElement('button'), C=CATS[c];
+  b.type='button'; b.className='cat'; b.style.setProperty('--c','var(--'+c+')'); b.setAttribute('aria-pressed','true');
+  b.innerHTML='<i></i><span class="n">'+C.name+'</span><span class="p">'+fmt(totals[c])+' PL</span><span class="m">'+fmt(totals[c])+' × '+C.per+' = '+fmt(totals[c]*C.per)+' '+C.unit+'</span>';
+  b.addEventListener('click',function(){catOn[c]=!catOn[c];b.setAttribute('aria-pressed',String(catOn[c]));layout()});
+  li.appendChild(b); legendList.appendChild(li);
+});
+document.getElementById('legendFoot').textContent='โซดา + น้ำ รวม '+fmt(totals.soda+totals.water)+' พาเลท = '+fmt((totals.soda+totals.water)*40)+' ลัง · แตะรายการเพื่อซ่อนหรือแสดงประเภท';
+var legend=document.getElementById('legend'); legend.open=window.innerWidth>640;
+
+/* click to select (ignore drags) */
+var ray=new T.Raycaster(), ndc=new T.Vector2(), down=null;
+renderer.domElement.addEventListener('pointerdown',function(e){down={x:e.clientX,y:e.clientY}});
+renderer.domElement.addEventListener('pointerup',function(e){
+  if(!down)return; var moved=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(moved>5)return;
+  var r=glEl.getBoundingClientRect();
+  ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  var hits=ray.intersectObjects(pickables,false);
+  for(var i=0;i<hits.length;i++){
+    var h=hits[i], id=h.object.isInstancedMesh?h.object.userData.zones[h.instanceId]:h.object.userData.zone;
+    if(id!=null){select(id);return}
+  }
+  select(null);
+});
+
+/* ---------- size, loop ---------- */
+function resize(){
+  var w=glEl.clientWidth||window.innerWidth, h=glEl.clientHeight||window.innerHeight;
+  renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
+  document.documentElement.style.setProperty('--dock-h',document.getElementById('dock').offsetHeight+'px');
+  if(!tw&&curView&&document.querySelector('[data-view][aria-pressed="true"]'))fly(curView,true);
+  dirty=true;
+}
+if(window.ResizeObserver)new ResizeObserver(resize).observe(glEl); else window.addEventListener('resize',resize);
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+function frame(now){
+  requestAnimationFrame(frame);
+  stepTween(now);
+  if(controls.update())dirty=true;
+  if(dirty){dirty=false;renderer.render(scene,camera);updateLabels()}
+}
+
+layout(); applyTheme(); resize(); fly('iso',true); select(zones.filter(function(z){return z.row===1})[0].id);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){dirty=true});
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
