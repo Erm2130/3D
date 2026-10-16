@@ -253,7 +253,7 @@ function G(id,name,cat){var g={id:id,name:name,cat:cat,zs:[]};groups.push(g);ret
 function S(g,o){
   o.kind='stack'; o.g=g; o.cat=g.cat; o.D=PD; o.levels=3; o.lv0=3; o.id=zones.length;
   o.key=g.id+o.label; o.len0=o.len; o.pl0=o.pl;
-  o.maxLen=Math.floor(Math.min(16,o.axis==='x'?WX-o.x0:WZ-o.z0)*2)/2;
+  o.maxLen=Math.floor(Math.min(o.cap||16,o.rev?o.xr:(o.axis==='x'?WX-o.x0:WZ-o.z0))*2)/2;
   if(!o.name)o.name='แถวที่ '+o.label;
   zones.push(o); g.zs.push(o); return o;
 }
@@ -285,11 +285,11 @@ var BX=[0,.2456,.4271,.6903,1].map(function(f){return .5+f*YL});
 g=G('L','แถว 1–20','beer');
 for(i=1;i<=20;i++)S(g,{label:String(i),axis:'x',x0:WALL,z0:LZ+(i-1)*RP,len:7.5,pl:21,lab:{x:WALL+7.5+.6,z:LZ+(i-1)*RP+PD/2}});
 g=G('R','แถว 21–34','beer');
-for(i=21;i<=34;i++)S(g,{label:String(i),axis:'x',x0:WX-WALL-7.5,z0:TOP0+(i-21)*RP,len:7.5,pl:21,lab:{x:WX-WALL-7.5-.6,z:TOP0+(i-21)*RP+PD/2}});
+for(i=21;i<=34;i++)S(g,{label:String(i),axis:'x',x0:WX-WALL-7.5,rev:true,xr:WX-WALL,z0:TOP0+(i-21)*RP,len:7.5,pl:21,lab:{x:WX-WALL-7.5-.6,z:TOP0+(i-21)*RP+PD/2}});
 var MID0=fx(494), MIDW=11*PD+10*RG;   /* middle section: every block spans the same width */
 g=G('M','แถว 35–38','beer');
-S(g,{label:'35',axis:'x',x0:MID0,z0:ZR,len:MIDW,pl:36,lab:{x:MID0-.6,z:ZR+PD/2}});
-for(i=36;i<=38;i++)S(g,{label:String(i),axis:'x',x0:MID0,z0:ZR+(i-35)*RP,len:MIDW,pl:42,lab:{x:MID0-.6,z:ZR+(i-35)*RP+PD/2}});
+S(g,{label:'35',axis:'x',x0:MID0,cap:19,z0:ZR,len:MIDW,pl:36,lab:{x:MID0-.6,z:ZR+PD/2}});
+for(i=36;i<=38;i++)S(g,{label:String(i),axis:'x',x0:MID0,cap:19,z0:ZR+(i-35)*RP,len:MIDW,pl:42,lab:{x:MID0-.6,z:ZR+(i-35)*RP+PD/2}});
 g=G('C1','แถว 39–49','can1');
 for(i=0;i<11;i++)S(g,{label:String(39+i),axis:'z',x0:MID0+i*RP,z0:TOP0,len:LN(5),pl:15,lab:{x:MID0+i*RP+PD/2,z:TOP0+LN(5)+.6}});
 g=G('C2','แถว 50–58','can2');
@@ -500,7 +500,7 @@ function placeZone(z){
     glim=(showOver&&viewLv>=MAXL&&c.over>0&&p>=c.capPos&&p<c.totPos)?(p===c.totPos-1?c.remTot:z.levels):0;
     for(l=0;l<MAXL;l++){
       idx=z.slot0+p*MAXL+l; on=l<lim&&l<viewLv&&catOn[z.cat]; gh=l<glim&&catOn[z.cat]; y=BASE+l*STEP;
-      if(z.axis==='x'){X=cx(z.x0+p*PP+PW/2);Z=cz(z.z0+z.D/2);sx=PW-GAPG;sz=z.D-GAPG}
+      if(z.axis==='x'){X=cx(z.rev?z.xr-p*PP-PW/2:z.x0+p*PP+PW/2);Z=cz(z.z0+z.D/2);sx=PW-GAPG;sz=z.D-GAPG}
       else{X=cx(z.x0+z.D/2);Z=cz(z.z0+p*PP+PW/2);sx=z.D-GAPG;sz=PW-GAPG}
       dummy.rotation.set(0,z.axis==='x'?0:Math.PI/2,0);
       dummy.position.set(X,y,Z); dummy.scale.set(on?1:e,on?1:e,on?1:e); dummy.updateMatrix(); palletMesh.setMatrixAt(idx,dummy.matrix);
@@ -513,6 +513,7 @@ function placeZone(z){
 }
 function updateZone(z){
   if(z.kind!=='stack')return;
+  if(z.rev){z.x0=z.xr-z.len; z.lab.x=z.x0-.6; if(z.tag)z.tag.pos.x=cx(z.lab.x)}   /* rows 21-34 grow away from the wall, towards the aisle */
   var c=calc(z), w=z.axis==='x'?z.len:z.D, d=z.axis==='x'?z.D:z.len;
   z.strip.scale.set(w,.05,d); z.strip.position.set(cx(z.x0+w/2),.025,cz(z.z0+d/2));
   z.edge.scale.copy(z.strip.scale); z.edge.position.copy(z.strip.position);
@@ -584,7 +585,7 @@ function updateLabels(){
 }
 
 /* ---------- persistence ---------- */
-var LS='wh3d-v22';
+var LS='wh3d-v23';
 function save(){try{var o={};zones.forEach(function(z){if(z.kind==='stack')o[z.key]=[z.pl,z.levels,z.len]});localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
 function clampZ(z){
   z.pl=Math.max(0,Math.min(9999,Math.round(+z.pl)||0)); z.levels=Math.max(1,Math.min(MAXL,Math.round(+z.levels)||3));
