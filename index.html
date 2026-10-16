@@ -269,9 +269,10 @@ var SX_=fx(494)+LN(7)+PG, OZ=ZW+3*RP, OD=WZ-OZ, SR=fz(789)-fz(640)+2*RP;   /* of
 A('office','ออฟฟิศ',0,0,WX,fz(33),6.5);
 A('area','จุดซักล้าง',fx(44),fz(55),fx(176)-fx(44),fz(152)-fz(55));
 A('area','พัดลม โต๊ะเยี่ยม',fx(193),fz(55),fx(432)-fx(193),fz(152)-fz(55));
-var AZ=1.0;   /* repair / spare areas sit 1 m further down so rows 21-34 (200 mm row gap) clear them */
-A('area','จุดซ่อมสินค้า',fx(1014),fz(640)+AZ,fx(1104)-fx(1014),fz(768)-fz(640));
-A('area','อะไหล่ / หน่วยย่อยสินค้า',fx(1113),fz(640)+AZ,fx(1284)-fx(1113),fz(768)-fz(640));
+/* repair + spare parts: two blocks of full-pallet cells (1.0 x 1.2 m, 3 rows deep = 4.0 m), one pallet below row 34; the spare block ends at the stair wall */
+var CROWS=3, CW=function(n){return n*PP-PG}, CD=CROWS*PD+(CROWS-1)*RG, CZ0=(TOP0+13*RP+PD)+PD, DOORZ=29.9, DOORH=2.0, DOORW=1.4, SPX=fx(1294)-CW(2), RPX=WX-WALL-7.5;
+A('area','จุดซ่อมสินค้า',RPX,CZ0,CW(3),CD); zones[zones.length-1].cells=[3,CROWS];
+A('area','อะไหล่ / หน่วยย่อยสินค้า',SPX,CZ0,CW(2),CD); zones[zones.length-1].cells=[2,CROWS];
 A('stairs','บันได ขึ้นที่เก็บสินค้าชั้น 2',fx(1294),OZ-SR,WX-fx(1294),SR,3.2);
 var OX=fx(1164);
 A('office','ออฟฟิศ',OX,OZ,WX-OX,OD,2.9);
@@ -385,10 +386,20 @@ zones.forEach(function(z){
     m=slab(z.w-.2,z.h,z.d-.2,X,z.h/2,Z,lamb('--office'),true);
     if(z.h>4){reg(slab(z.w-.14,1.5,z.d-.14,X,z.h*.68,Z,lamb('--glass'),true));reg(slab(z.w-.14,1.5,z.d-.14,X,z.h*.3,Z,lamb('--glass'),true))}
   }else if(z.kind==='stairs'){
-    n=16; run=z.d/n;
+    n=16; var half=n/2, LD=PD, rise=z.h/n; run=(z.d-LD)/n;
+    var wI=.14, xi=cx(z.x0)+.1+wI/2, zc, hl, k2, zs=cz(z.z0);
     for(k=0;k<n;k++){
-      hh=(k+1)*z.h/n; st=slab(z.w-.2,hh,run-.02,X,hh/2,cz(z.z0)+run*(k+.5),lamb('--office'),true);
-      reg(st);
+      hh=(k+1)*rise; zc=zs+(k<half?k*run:k*run+LD)+run/2;
+      reg(slab(z.w-.2,.08,run,X,hh-.04,zc,lamb('--office'),true));             /* tread */
+      reg(slab(z.w-.2,rise,.03,X,hh-rise/2,zc-run/2+.015,lamb('--office'),true));   /* riser */
+      var zp=z.z0+(k<half?k*run:k*run+LD)+run/2, door=Math.abs(zp-DOORZ)<DOORW/2&&hh>DOORH;
+      if(door)reg(slab(wI,hh-DOORH,run,xi,DOORH+(hh-DOORH)/2,zc,lamb('--office'),true));   /* door opening in the wall */
+      else if(Math.abs(zp-DOORZ)>=DOORW/2||hh<=DOORH)reg(slab(wI,hh,run,xi,hh/2,zc,lamb('--office'),true));   /* solid wall under the stairs, one side only */
+      if(k===half-1){                                                          /* mid landing, one pallet long */
+        zc=zs+(k+1)*run+LD/2;
+        reg(slab(z.w-.2,.08,LD,X,hh-.04,zc,lamb('--office'),true));
+        reg(slab(wI,hh,LD,xi,hh/2,zc,lamb('--office'),true));
+      }
     }
     m=slab(z.w-.1,.04,z.d-.1,X,.02,Z,lamb('--pad2'));
   }else if(z.kind==='area'){
@@ -402,6 +413,8 @@ var dashArr=[];
 zones.forEach(function(z){
   if(z.kind!=='bay'&&z.kind!=='area')return;
   var a=cx(z.x0), b=cx(z.x0+z.w), c=cz(z.z0), d=cz(z.z0+z.d), y=z.kind==='bay'?.05:.16;
+  if(z.cells){var ci,cj; for(ci=0;ci<z.cells[0];ci++)for(cj=0;cj<z.cells[1];cj++){var ca=cx(z.x0+ci*PP), cb=ca+PW, cc2=cz(z.z0+cj*RP), cd=cc2+PD;
+    dashArr.push(ca,y,cc2,cb,y,cc2, cb,y,cc2,cb,y,cd, cb,y,cd,ca,y,cd, ca,y,cd,ca,y,cc2)} return}
   dashArr.push(a,y,c,b,y,c, b,y,c,b,y,d, b,y,d,a,y,d, a,y,d,a,y,c);
 });
 var dashMat=new T.LineDashedMaterial({color:0x777777,dashSize:.8,gapSize:.6}); themed.push({mat:dashMat,token:'--mark'});
@@ -571,7 +584,7 @@ function updateLabels(){
 }
 
 /* ---------- persistence ---------- */
-var LS='wh3d-v17';
+var LS='wh3d-v22';
 function save(){try{var o={};zones.forEach(function(z){if(z.kind==='stack')o[z.key]=[z.pl,z.levels,z.len]});localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
 function clampZ(z){
   z.pl=Math.max(0,Math.min(9999,Math.round(+z.pl)||0)); z.levels=Math.max(1,Math.min(MAXL,Math.round(+z.levels)||3));
