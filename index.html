@@ -4,152 +4,216 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Layout concept: full-bleed 3D stage; one column of overlays at top-left (title, capacity legend, selected zone); control bar docked at the bottom. */
+/* Layout concept: 3D stage beside an editing panel (stage on top, panel below on phones). Real metres: warehouse 42 x 35, pallet 1.0 x 1.2. */
 :root{
   --sans:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-  --bg:#E3E7EB; --floor:#D2D8DE; --pad:#C4CBD3; --pad2:#C3D3D8; --bay:#D9D5C6;
-  --line:#7C8895; --ink:#18212A; --muted:#566371;
-  --panel:rgba(246,248,249,.9); --panel-line:#C2CAD2; --accent:#D6246E;
-  --beer:#E39A2D; --can:#7A74C9; --soda:#7DB542; --water:#2FAFCB;
-  --wood:#B48A5A; --office:#9BA6B1; --hemi:.9; --sun:.55;
+  --bg:#E6E9EC; --floor:#CDCDC8; --pad:#C7C7C2; --pad2:#C5D6DA; --bay:#DDD8C8;
+  --line:#7C8895; --grid:#C3CAD1; --office:#A3ADB7; --wood:#C42B22; --mark:#D9A800; --glass:#7C9BB0; --pal:#3A4047; --palred:#B3261E;
+  --beer:#E39A2D; --can1:#7A74C9; --can2:#C964A0; --water:#2FAFCB; --soda:#7DB542;
+  --accent:#1D4ED8; --warn:#D93B2B; --ok:#2E8B57; --office2:#B9C2CB;
+  --ink:#18212A; --muted:#566371; --panel:#F4F6F7; --card:#FFFFFF; --field:#FFFFFF;
+  --panel-line:#CBD2D8; --tag:rgba(246,248,249,.92); --hemi:.9; --sun:.55;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#11171D; --floor:#1C242C; --pad:#27323C; --pad2:#243640; --bay:#322F26;
-    --line:#4D5C6A; --ink:#E6EBEF; --muted:#94A2AF;
-    --panel:rgba(22,29,36,.88); --panel-line:#35424E; --accent:#FF5C9A;
-    --beer:#F0A93C; --can:#9A94E6; --soda:#93CC58; --water:#4BC5E0;
-    --wood:#94714A; --office:#56626E; --hemi:.62; --sun:.5; color-scheme:dark;
+    --bg:#11171D; --floor:#24272B; --pad:#33383E; --pad2:#243640; --bay:#322F26;
+    --line:#4D5C6A; --grid:#27323C; --office:#56626E; --wood:#D0463C; --mark:#E3B82B; --glass:#3B5A70; --pal:#59626C; --palred:#D4483F;
+    --beer:#F0A93C; --can1:#9A94E6; --can2:#E283BC; --water:#4BC5E0; --soda:#93CC58;
+    --accent:#7FB0FF; --warn:#FF7A6B; --ok:#5CC48A; --office2:#6C7986;
+    --ink:#E6EBEF; --muted:#94A2AF; --panel:#161D24; --card:#1C252E; --field:#11171D;
+    --panel-line:#2F3B46; --tag:rgba(22,29,36,.9); --hemi:.62; --sun:.5; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#11171D; --floor:#1C242C; --pad:#27323C; --pad2:#243640; --bay:#322F26;
-  --line:#4D5C6A; --ink:#E6EBEF; --muted:#94A2AF;
-  --panel:rgba(22,29,36,.88); --panel-line:#35424E; --accent:#FF5C9A;
-  --beer:#F0A93C; --can:#9A94E6; --soda:#93CC58; --water:#4BC5E0;
-  --wood:#94714A; --office:#56626E; --hemi:.62; --sun:.5; color-scheme:dark;
+  --bg:#11171D; --floor:#24272B; --pad:#33383E; --pad2:#243640; --bay:#322F26;
+  --line:#4D5C6A; --grid:#27323C; --office:#56626E; --wood:#D0463C; --mark:#E3B82B; --glass:#3B5A70; --pal:#59626C; --palred:#D4483F;
+  --beer:#F0A93C; --can1:#9A94E6; --can2:#E283BC; --water:#4BC5E0; --soda:#93CC58;
+  --accent:#7FB0FF; --warn:#FF7A6B; --ok:#5CC48A; --office2:#6C7986;
+  --ink:#E6EBEF; --muted:#94A2AF; --panel:#161D24; --card:#1C252E; --field:#11171D;
+  --panel-line:#2F3B46; --tag:rgba(22,29,36,.9); --hemi:.62; --sun:.5; color-scheme:dark;
 }
 
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 14px/1.45 var(--sans);overflow:hidden}
-button{font:inherit;color:inherit}
+button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-.stage{position:relative;height:100%;min-height:0}
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,46%)}
+.stage{position:relative;min-width:0;min-height:0}
 #gl{position:absolute;inset:0}
 #gl canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 #gl canvas:active{cursor:grabbing}
 .nogl{margin:0;padding:24px 16px;color:var(--muted)}
 .labels{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:11px;line-height:1.3;padding:2px 7px;border-radius:4px;background:var(--panel);border:1px solid var(--panel-line);color:var(--ink)}
-.tag.num{padding:0;background:none;border:0;font:500 11px/1 var(--mono);color:var(--muted)}
+.tag{position:absolute;left:0;top:0;white-space:nowrap;font-size:11px;line-height:1.3;padding:2px 7px;border-radius:4px;background:var(--tag);border:1px solid var(--panel-line);color:var(--ink)}
+.tag.num{padding:0;background:none;border:0;font:500 10.5px/1 var(--mono);color:var(--muted)}
+.tag.num.warn{color:var(--warn);font-weight:700}
+.tag.dim{background:none;border:0;font:500 12px/1 var(--mono);color:var(--muted)}
 
-.card{background:var(--panel);border:1px solid var(--panel-line);border-radius:10px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-.side{position:absolute;left:16px;top:16px;width:min(330px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;max-height:calc(100% - 40px - var(--dock-h,64px));overflow:auto;pointer-events:none}
-.side>*{pointer-events:auto;flex:none}
-
-.head{padding:12px 14px}
-.eyebrow{margin:0;font:500 11px/1.2 var(--mono);letter-spacing:.08em;color:var(--muted)}
+.panel{min-width:0;min-height:0;overflow:auto;padding:14px 16px 24px;background:var(--panel);border-top:1px solid var(--panel-line);display:flex;flex-direction:column;gap:16px}
+@media (min-width:900px){
+  .app{grid-template-columns:392px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+  .panel{order:-1;border-top:0;border-right:1px solid var(--panel-line);padding-top:18px}
+}
+.eyebrow{margin:0;font:500 11px/1.2 var(--mono);letter-spacing:.06em;color:var(--muted)}
 h1{margin:4px 0 0;font-size:19px;line-height:1.25;font-weight:600;text-wrap:balance}
 .hint{margin:4px 0 0;color:var(--muted);font-size:12.5px}
+.sec{margin:0 0 8px;font:500 11px/1.2 var(--mono);letter-spacing:.08em;color:var(--muted)}
 
-.legend summary{list-style:none;cursor:pointer;padding:10px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;min-height:24px}
-.legend summary::-webkit-details-marker{display:none}
-.legend summary b{font:500 15px/1 var(--mono);font-variant-numeric:tabular-nums}
-.legend summary span{color:var(--muted);font-size:13px}
-.legend summary::after{content:"+";font:500 15px/1 var(--mono);color:var(--muted)}
-.legend[open] summary::after{content:"−"}
-.legend ul{list-style:none;margin:0;padding:0 8px 8px;display:flex;flex-direction:column;gap:2px}
-.cat{width:100%;display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:2px 10px;align-items:center;text-align:left;background:none;border:0;border-radius:6px;padding:7px 8px;min-height:44px;cursor:pointer}
+.zcard{background:var(--card);border:1px solid var(--panel-line);border-radius:10px;padding:12px 14px 14px}
+.kicker{margin:0;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.kicker i{width:10px;height:10px;border-radius:2px;background:var(--c,var(--line))}
+.zcard h2{margin:3px 0 0;font-size:17px;line-height:1.3;font-weight:600;text-wrap:balance}
+.fields{margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.full{grid-column:1 / -1}
+.fld>label,.fld>span.l{font-size:12px;color:var(--muted)}
+.num-in{height:40px;min-width:0;width:100%;box-sizing:border-box;padding:0 10px;border:1px solid var(--panel-line);border-radius:6px;background:var(--field);font:500 15px/1 var(--mono);font-variant-numeric:tabular-nums}
+.stepper{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:6px}
+.stepper button{height:40px;border:1px solid var(--panel-line);border-radius:6px;background:var(--field);cursor:pointer;font-size:18px;line-height:1}
+.stepper button:hover,.btn:hover{background:color-mix(in srgb,var(--ink) 8%,var(--field))}
+.stepper .num-in{text-align:center;font-size:18px}
+.seg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.seg{min-height:40px;padding:0 10px;border:1px solid var(--panel-line);border-radius:6px;background:var(--field);cursor:pointer;white-space:nowrap;font-size:13px}
+.seg:hover{background:color-mix(in srgb,var(--ink) 8%,var(--field))}
+.seg[aria-pressed="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.chk{grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:13px;min-height:32px;cursor:pointer}
+.chk input{width:18px;height:18px;margin:0;accent-color:var(--accent)}
+.btn{min-height:40px;padding:0 14px;border:1px solid var(--panel-line);border-radius:6px;background:var(--field);cursor:pointer;font-size:13px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--card)}
+.btn.primary:hover{background:color-mix(in srgb,var(--accent) 88%,var(--ink))}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.zdl{margin:14px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding-top:12px;border-top:1px solid var(--panel-line)}
+.zdl dt{font-size:11.5px;color:var(--muted)}
+.zdl dd{margin:0;font:500 14px/1.3 var(--mono);font-variant-numeric:tabular-nums}
+.zdl dd.th{font-family:var(--sans)}
+.zdl .wide{grid-column:1 / -1}
+.st.ok{color:var(--ok)} .st.over{color:var(--warn)} .st.free{color:var(--ink)}
+.zstatic{margin:10px 0 0;color:var(--muted);font-size:13px}
+
+.sum{display:flex;flex-direction:column;gap:2px}
+.cat{width:100%;display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:1px 10px;align-items:center;text-align:left;background:none;border:0;border-radius:6px;padding:7px 6px;min-height:44px;cursor:pointer}
 .cat:hover{background:color-mix(in srgb,var(--ink) 7%,transparent)}
 .cat i{grid-row:span 2;width:14px;height:14px;border-radius:3px;background:var(--c)}
 .cat .n{font-weight:500}
 .cat .p{font:500 13px/1 var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .cat .m{grid-column:2 / 4;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.cat[aria-pressed="false"]{opacity:.42}
+.cat .m b{font-weight:500;color:var(--warn)}
+.cat[aria-pressed="false"]{opacity:.45}
 .cat[aria-pressed="false"] .n{text-decoration:line-through}
-.legend .foot{margin:0;padding:8px 16px 12px;border-top:1px solid var(--panel-line);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.total{margin:6px 0 0;padding:8px 6px 0;border-top:1px solid var(--panel-line);font-size:13px;font-variant-numeric:tabular-nums}
+.total b{font:500 15px/1 var(--mono)}
+.total .w{color:var(--warn)}
 
-.info{padding:12px 14px;position:relative}
-.info .kicker{margin:0;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-.info .kicker i{width:10px;height:10px;border-radius:2px;background:var(--c,var(--line))}
-.info h2{margin:3px 28px 0 0;font-size:16px;line-height:1.3;font-weight:600;text-wrap:balance}
-.info dl{margin:10px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
-.info dt{font-size:11.5px;color:var(--muted)}
-.info dd{margin:0;font:500 14px/1.3 var(--mono);font-variant-numeric:tabular-nums}
-.info dd.th{font-family:var(--sans);font-weight:500}
-.info .wide{grid-column:1 / -1}
-.info .x{position:absolute;top:6px;right:6px;width:32px;height:32px;border:0;border-radius:6px;background:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1}
-.info .x:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
-.info .empty{margin:0;color:var(--muted)}
+details.all>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;font:500 11px/1.2 var(--mono);letter-spacing:.08em;color:var(--muted)}
+.gh{margin:12px 0 4px;display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:500}
+.gh span:last-child{font:500 12px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.lr{display:grid;grid-template-columns:minmax(0,1fr) 76px 92px;gap:8px;align-items:center;padding:2px 0}
+.lr .nm{min-height:32px;text-align:left;background:none;border:0;border-radius:4px;padding:0 6px;cursor:pointer;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lr .nm:hover{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.lr.on .nm{background:color-mix(in srgb,var(--accent) 16%,transparent);font-weight:600}
+.lr .num-in{height:32px;font-size:13px;padding:0 6px;text-align:right}
+.lr .s{font:500 11.5px/1.2 var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.foot{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)}
 
-.dock{position:absolute;left:16px;right:16px;bottom:16px;display:flex;justify-content:center;pointer-events:none}
-.bar{pointer-events:auto;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:center;padding:8px 10px;max-width:100%}
+.dock{position:absolute;left:16px;right:16px;bottom:12px;display:flex;justify-content:center;pointer-events:none}
+.bar{pointer-events:auto;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;justify-content:center;padding:6px 8px;max-width:100%;background:var(--tag);border:1px solid var(--panel-line);border-radius:10px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .grp{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .grp>span{font-size:12px;color:var(--muted);padding:0 4px}
-.seg{min-height:36px;padding:0 11px;border:1px solid transparent;border-radius:6px;background:none;cursor:pointer;white-space:nowrap;font-size:13px}
-.seg:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
-.seg[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.bar .seg{min-height:34px;padding:0 10px;border-color:transparent;background:none}
+.bar .seg:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.bar .seg[aria-pressed="true"]{background:var(--ink);color:var(--card)}
 .count{font:500 12px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;padding:0 4px}
-
-@media (max-width:640px){
-  .hint{display:none}
-  h1{font-size:16px}
-  .head{padding:10px 12px}
-  .info dl{gap:6px 10px}
-  .bar{gap:4px 10px;padding:6px 8px}
-}
+@media (max-width:640px){.app{grid-template-rows:minmax(0,1fr) minmax(0,42%)}.dock{left:8px;right:8px;bottom:8px;justify-content:flex-start}.bar{flex-wrap:nowrap;overflow-x:auto;gap:4px 10px;max-width:100%}.grp{flex-wrap:nowrap}.bar .seg{min-height:32px;padding:0 8px;font-size:12.5px;flex:none}.grp>span,.count{white-space:nowrap}.hint{display:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
-<div class="stage">
-  <div id="gl" role="img" aria-label="โมเดล 3 มิติของคลังสินค้า หมุนและซูมได้"></div>
-  <div class="labels" id="labels"></div>
-
-  <div class="side" id="side">
-    <header class="card head">
-      <p class="eyebrow">ตัวอย่างจุดวางพาเลท · ซ้อน 3 ชั้น</p>
-      <h1>ผังคลังสินค้า 3 มิติ</h1>
-      <p class="hint">ลากเพื่อหมุน · เลื่อนหรือบีบเพื่อซูม · แตะที่แถวหรือโซนเพื่อดูรายละเอียด</p>
-    </header>
-
-    <details class="card legend" id="legend">
-      <summary><b id="totalCap">1,386</b><span>พาเลทที่วางได้ทั้งหมด</span></summary>
-      <ul id="legendList"></ul>
-      <p class="foot" id="legendFoot"></p>
-    </details>
-
-    <section class="card info" id="info" aria-live="polite">
-      <button class="x" id="infoClose" type="button" aria-label="ปิดรายละเอียด">×</button>
-      <p class="kicker"><i id="iDot"></i><span id="iKind"></span></p>
-      <h2 id="iName"></h2>
-      <dl id="iDl"></dl>
-      <p class="empty" id="iEmpty" hidden>แตะที่แถวหรือโซนในภาพเพื่อดูรายละเอียด</p>
-    </section>
-  </div>
-
-  <div class="dock" id="dock">
-    <div class="card bar">
-      <div class="grp" role="group" aria-label="มุมมอง">
-        <button class="seg" type="button" data-view="iso" aria-pressed="true">มุมเฉียง</button>
-        <button class="seg" type="button" data-view="top" aria-pressed="false">มุมสูง</button>
-        <button class="seg" type="button" data-view="rows1" aria-pressed="false">แถว 1–10</button>
-        <button class="seg" type="button" data-view="rows2" aria-pressed="false">แถว 11–18</button>
-        <button class="seg" type="button" data-view="mid" aria-pressed="false">โซนกลาง</button>
-      </div>
-      <div class="grp" role="group" aria-label="จำนวนชั้นที่แสดง">
-        <span>ชั้น</span>
-        <button class="seg" type="button" data-lv="1" aria-pressed="false">1</button>
-        <button class="seg" type="button" data-lv="2" aria-pressed="false">2</button>
-        <button class="seg" type="button" data-lv="3" aria-pressed="true">3</button>
-      </div>
-      <div class="grp">
-        <button class="seg" type="button" id="tgLabels" aria-pressed="true">ชื่อโซน</button>
-        <span class="count" id="count"></span>
+<div class="app">
+  <div class="stage">
+    <div id="gl" role="img" aria-label="โมเดล 3 มิติของคลังสินค้า หมุนและซูมได้"></div>
+    <div class="labels" id="labels"></div>
+    <div class="dock">
+      <div class="bar">
+        <div class="grp" role="group" aria-label="มุมมอง">
+          <button class="seg" type="button" data-view="iso" aria-pressed="true">มุมเฉียง</button>
+          <button class="seg" type="button" data-view="top" aria-pressed="false">มุมสูง</button>
+          <button class="seg" type="button" data-view="left" aria-pressed="false">แถว 1–20</button>
+          <button class="seg" type="button" data-view="right" aria-pressed="false">แถว 21–34</button>
+          <button class="seg" type="button" data-view="mid" aria-pressed="false">โซนกลาง</button>
+          <button class="seg" type="button" data-view="dock" aria-pressed="false">ลานโหลด</button>
+        </div>
+        <div class="grp" role="group" aria-label="ซ้อนทุกโซน">
+          <span>ซ้อนทุกโซน</span>
+          <button class="seg" type="button" data-gl="1" aria-pressed="false">1</button>
+          <button class="seg" type="button" data-gl="2" aria-pressed="false">2</button>
+          <button class="seg" type="button" data-gl="3" aria-pressed="true">3</button>
+        </div>
+        <div class="grp">
+          <button class="seg" type="button" id="tgLabels" aria-pressed="false">ชื่อโซน</button>
+          <button class="seg" type="button" id="tgOver" aria-pressed="true">ส่วนที่ล้น</button>
+          <span class="count" id="count"></span>
+        </div>
       </div>
     </div>
   </div>
+
+  <aside class="panel" id="panel">
+    <header>
+      <p class="eyebrow">โกดัง 42 × 35.8 ม. · ลานโหลด 41 × 14 ม. · พาเลท 1.0 × 1.2 × 0.156 ม. · พาเลทห่างกัน 80 มม. · แถวห่างกัน 200 มม.</p>
+      <h1>ผังคลังสินค้า 3 มิติ</h1>
+      <p class="hint">ลากเพื่อหมุน เลื่อนเพื่อซูม แตะที่แถวเพื่อแก้จำนวนพาเลท</p>
+    </header>
+
+    <section class="zcard" id="zcard" aria-live="polite">
+      <p class="kicker"><i id="zDot"></i><span id="zCat"></span></p>
+      <h2 id="zName"></h2>
+      <div id="zEdit">
+        <div class="fields">
+          <div class="fld full">
+            <label for="inPL">จำนวนพาเลทที่จะวาง (PL)</label>
+            <div class="stepper">
+              <button type="button" id="plMinus" aria-label="ลด 1 พาเลท">−</button>
+              <input class="num-in" id="inPL" type="number" inputmode="numeric" min="0" step="1">
+              <button type="button" id="plPlus" aria-label="เพิ่ม 1 พาเลท">+</button>
+            </div>
+          </div>
+          <div class="fld">
+            <span class="l">ซ้อนกี่ชั้น</span>
+            <div class="seg3" id="zLv">
+              <button class="seg" type="button" data-zl="1" aria-pressed="false">1</button>
+              <button class="seg" type="button" data-zl="2" aria-pressed="false">2</button>
+              <button class="seg" type="button" data-zl="3" aria-pressed="true">3</button>
+            </div>
+          </div>
+          <div class="fld">
+            <label for="inLen">ความยาวช่อง (ม.)</label>
+            <input class="num-in" id="inLen" type="number" inputmode="decimal" min="1" step="0.5">
+          </div>
+          <label class="chk"><input type="checkbox" id="applyGroup"><span>แก้ทั้งกลุ่มพร้อมกัน <b id="gCount"></b></span></label>
+          <div class="fld full" id="confirmWrap"><button class="btn primary" type="button" id="btnConfirm"></button></div>
+        </div>
+        <dl class="zdl" id="zDl"></dl>
+      </div>
+      <p class="zstatic" id="zStatic" hidden></p>
+    </section>
+
+    <section>
+      <h3 class="sec">สรุปตามประเภท · แตะเพื่อซ่อนหรือแสดง</h3>
+      <div class="sum" id="sum"></div>
+      <p class="total" id="total"></p>
+    </section>
+
+    <details class="all">
+      <summary>รายการทุกช่อง · แก้จำนวนได้ที่นี่</summary>
+      <div id="list"></div>
+    </details>
+
+    <div class="foot">
+      <span>ค่าที่แก้ไว้จะอยู่ในเบราว์เซอร์นี้</span>
+      <button class="btn" type="button" id="reset">คืนค่าเริ่มต้น</button>
+    </div>
+  </aside>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -162,368 +226,559 @@ if(!window.THREE||!THREE.OrbitControls){glEl.innerHTML='<p class="nogl">โห�
 var T=THREE, renderer;
 try{renderer=new T.WebGLRenderer({antialias:true});}catch(e){glEl.innerHTML='<p class="nogl">เบราว์เซอร์นี้เปิดภาพ 3 มิติไม่ได้ ลองใช้ Chrome หรือ Safari รุ่นล่าสุด</p>';return;}
 
-/* ---------- data: zones read from the floor plan (1 unit = 10 px of the plan) ---------- */
-var PX=10, CX=722, CY=435, LV=3;
-var PH=.16, GH=1.22, STEP=PH+GH+.04, BASE=.04;
-function gx(p){return (p-CX)/PX} function gz(p){return (p-CY)/PX}
-var CATS={
-  beer:{name:'เบียร์ลังใหญ่',per:60,unit:'ลัง'},
-  can:{name:'เบียร์กระป๋อง (พิเศษ)',per:150,unit:'ถาด'},
-  soda:{name:'โซดา',per:40,unit:'ลัง'},
-  water:{name:'น้ำ',per:40,unit:'ลัง'}
-};
-var zones=[];
-function Z(o){o.id=zones.length;zones.push(o);return o}
+/* ---------- real dimensions (metres) ---------- */
+var WX=42, WZ=35.8, YD=14, YL=41;   /* warehouse 42 x 35.8; loading yard 41 x 14 attached at the front */
+var PW=1.0, PD=1.2;        /* pallet: 1.0 along the row, 1.2 across it */
+var PG=.08, PP=PW+PG, RG=.2, RP=PD+RG;   /* 80 mm between pallets along a row; 200 mm between rows everywhere (as rows 50-58) */
+function LN(n){return Math.round((n*PP-PG)*100)/100}   /* length of a row holding n stacks */
+var GAPG=.02, PH=.156, GH=1.5, STEP=PH+GH, BASE=.05, MAXL=3, EXTRA=16;   /* pallet 1.0 x 1.2 x 0.156 m; goods 1.5 m per layer (5 crate layers) */
+function fx(p){return (p-44)*WX/1311}   /* drawing pixel -> metre */
+function fz(p){return p*35/1120}
+function cx(x){return x-WX/2}
+function cz(z){return z-(WZ+YD)/2}
 function fmt(n){return n.toLocaleString('en-US')}
 
-Z({kind:'office',name:'ออฟฟิศ',x0:33,y0:100,x1:1412,y1:118,h:2.6});
-Z({kind:'area',name:'จุดซักล้าง',x0:33,y0:136,x1:173,y1:245});
-Z({kind:'area',name:'พัดลม โต๊ะเยี่ยม',x0:242,y0:136,x1:460,y1:226});
-Z({kind:'area',name:'จุดซ่อมสินค้า',x0:995,y0:443,x1:1114,y1:516});
-Z({kind:'area',name:'อะไหล่/หน่วยย่อยสินค้า',x0:1114,y0:443,x1:1193,y1:516});
-Z({kind:'stairs',name:'บันได',x0:1213,y0:443,x1:1412,y1:516,h:4});
-Z({kind:'office',name:'ออฟฟิศ',x0:1213,y0:533,x1:1412,y1:624,h:3.2});
-Z({kind:'bay',name:'ลานโหลดรถปลึก1',x0:33,y0:642,x1:282,y1:769});
-Z({kind:'bay',name:'ลานโหลดรถปลึก2',x0:282,y0:642,x1:519,y1:769});
-Z({kind:'bay',name:'ลานโหลดรถปลึก3',x0:519,y0:642,x1:758,y1:769});
-Z({kind:'bay',name:'ลานโหลด',x0:758,y0:642,x1:1412,y1:769});
+var CATS={
+  beer:{name:'เบียร์ลังใหญ่',per:60,unit:'ลัง'},
+  can1:{name:'เลม่อน + เบียร์กระป๋อง',per:150,unit:'ถาด'},
+  can2:{name:'เบียร์กระป๋อง',per:150,unit:'ถาด'},
+  water:{name:'น้ำ',per:40,unit:'ลัง'},
+  soda:{name:'โซดา',per:40,unit:'ลัง'}
+};
+var CAT_ORDER=['beer','can1','can2','water','soda'];
 
-function rows(from,to,x0,sx0,x1,y0,step){
-  for(var n=from;n<=to;n++){
-    var y=y0+(n-from)*step;
-    Z({kind:'stack',cat:'beer',pl:42,row:n,name:'แถวที่ '+n,x0:x0,sx0:sx0,x1:x1,y0:y,y1:y+step,lines:2,per:7});
-  }
+/* ---------- zones ---------- */
+var zones=[], groups=[];
+function G(id,name,cat){var g={id:id,name:name,cat:cat,zs:[]};groups.push(g);return g}
+function S(g,o){
+  o.kind='stack'; o.g=g; o.cat=g.cat; o.D=PD; o.levels=3; o.lv0=3; o.id=zones.length;
+  o.key=g.id+o.label; o.len0=o.len; o.pl0=o.pl;
+  o.maxLen=Math.floor(Math.min(16,o.axis==='x'?WX-o.x0:WZ-o.z0)*2)/2;
+  if(!o.name)o.name='แถวที่ '+o.label;
+  zones.push(o); g.zs.push(o); return o;
 }
-rows(1,10,33,54,460,262,36.2);
-rows(11,18,995,1016,1412,136,36.125);
-rows(19,22,519,540,936,262,36.25);
-Z({kind:'stack',cat:'can',pl:110,name:'จุดวางสินค้ากระป๋อง เลม่อน และลีโอ สิงห์ กระป๋อง',short:'กระป๋อง เลม่อน · ลีโอ · สิงห์',x0:519,sx0:519,x1:936,y0:136,y1:245,lines:3,per:13});
-Z({kind:'stack',cat:'can',pl:96,name:'จุดวางสินค้ากระป๋อง',short:'จุดวางสินค้ากระป๋อง',x0:519,sx0:519,x1:936,y0:407,y1:480,lines:2,per:16});
-Z({kind:'stack',cat:'water',pl:128,name:'น้ำ',short:'น้ำ',x0:519,sx0:519,x1:737,y0:497,y1:624,lines:4,per:11});
-Z({kind:'stack',cat:'soda',pl:128,name:'โซดา',short:'โซดา',x0:738,sx0:738,x1:936,y0:497,y1:624,lines:4,per:11});
+function A(kind,name,x0,z0,w,d,h){zones.push({id:zones.length,kind:kind,name:name,x0:x0,z0:z0,w:w,d:d,h:h||0})}
 
-/* one record per pallet level */
-var inst=[], GAP=3;
+var i, g, WALL=.5, TOP0=fz(33)+WALL;   /* 500 mm clear of walls */
+var FG=3.0;                                      /* forklift parking clearance in front of rows 1-20 and water/soda, from the loading doors */
+var LZ=WZ-FG-(20*PD+19*RG);                   /* rows 1-20 end 500 mm from the front (loading-yard) wall */
+var ZW=WZ-.7-(6*PD+5*RG);   /* water/soda end 0.7 m from the front wall; no forklift strip here */                    /* water + soda rows end 500 mm from the front wall */
+var Z50=fz(497)+(ZW-701*35/1120)-RP;   /* cans pulled back one pallet row from the soda/water */       /* middle block moves down by the same distance */
+var ZR=Z50-4*RP;                        /* rows 35-38 butt against 50-58 */
+var SX_=fx(494)+LN(7)+PG, OZ=ZW+3*RP, OD=WZ-OZ, SR=fz(789)-fz(640)+2*RP;   /* office rear wall in line with row 67; stairs 2 pallets longer */   /* front office flush with the front wall; stairs run up beside it */
+A('office','ออฟฟิศ',0,0,WX,fz(33),6.5);
+A('area','จุดซักล้าง',fx(44),fz(55),fx(176)-fx(44),fz(152)-fz(55));
+A('area','พัดลม โต๊ะเยี่ยม',fx(193),fz(55),fx(432)-fx(193),fz(152)-fz(55));
+var AZ=1.0;   /* repair / spare areas sit 1 m further down so rows 21-34 (200 mm row gap) clear them */
+A('area','จุดซ่อมสินค้า',fx(1014),fz(640)+AZ,fx(1104)-fx(1014),fz(768)-fz(640));
+A('area','อะไหล่ / หน่วยย่อยสินค้า',fx(1113),fz(640)+AZ,fx(1284)-fx(1113),fz(768)-fz(640));
+A('stairs','บันได ขึ้นที่เก็บสินค้าชั้น 2',fx(1294),OZ-SR,WX-fx(1294),SR,3.2);
+var OX=fx(1164);
+A('office','ออฟฟิศ',OX,OZ,WX-OX,OD,2.9);
+zones[zones.length-1].front=true;
+A('deck','ที่เก็บสินค้า ชั้น 2',OX,OZ,WX-OX,OD,.3);
+zones[zones.length-1].elev=3.2;
+var BX=[0,.2456,.4271,.6903,1].map(function(f){return .5+f*YL});
+['ลานโหลดรถปลีก 1','ลานโหลดรถปลีก 2','ลานโหลดรถปลีก 3','ลานโหลด'].forEach(function(n,k){A('bay',n,BX[k],WZ,BX[k+1]-BX[k],YD)});
+
+g=G('L','แถว 1–20','beer');
+for(i=1;i<=20;i++)S(g,{label:String(i),axis:'x',x0:WALL,z0:LZ+(i-1)*RP,len:7.5,pl:21,lab:{x:WALL+7.5+.6,z:LZ+(i-1)*RP+PD/2}});
+g=G('R','แถว 21–34','beer');
+for(i=21;i<=34;i++)S(g,{label:String(i),axis:'x',x0:WX-WALL-7.5,z0:TOP0+(i-21)*RP,len:7.5,pl:21,lab:{x:WX-WALL-7.5-.6,z:TOP0+(i-21)*RP+PD/2}});
+var MID0=fx(494), MIDW=11*PD+10*RG;   /* middle section: every block spans the same width */
+g=G('M','แถว 35–38','beer');
+S(g,{label:'35',axis:'x',x0:MID0,z0:ZR,len:MIDW,pl:36,lab:{x:MID0-.6,z:ZR+PD/2}});
+for(i=36;i<=38;i++)S(g,{label:String(i),axis:'x',x0:MID0,z0:ZR+(i-35)*RP,len:MIDW,pl:42,lab:{x:MID0-.6,z:ZR+(i-35)*RP+PD/2}});
+g=G('C1','แถว 39–49','can1');
+for(i=0;i<11;i++)S(g,{label:String(39+i),axis:'z',x0:MID0+i*RP,z0:TOP0,len:LN(5),pl:15,lab:{x:MID0+i*RP+PD/2,z:TOP0+LN(5)+.6}});
+g=G('C2','แถว 50–58','can2');
+for(i=0;i<10;i++){
+  var c2x=MID0+(MIDW-(10*PD+9*RG))/2+i*RP;
+  S(g,{label:i===9?'58*':String(50+i),name:i===9?'แถวที่ 58 (ช่องท้าย)':null,axis:'z',x0:c2x,z0:Z50,len:LN(i===0?4:5),pl:i===9?0:(i===0?12:15),lab:{x:c2x+PD/2,z:Z50+LN(5)+.6}});
+}
+g=G('W','น้ำ 59–64','water');
+for(i=0;i<6;i++)S(g,{label:String(59+i),name:'แถวที่ '+(59+i)+' (น้ำ)',axis:'x',x0:MID0,z0:ZW+i*RP,len:LN(7),pl:21,lab:{x:MID0-.6,z:ZW+i*RP+PD/2}});
+g=G('S','โซดา 60–69','soda');
+var SX=MID0+LN(7)+PG;
+S(g,{label:'60',name:'แถวที่ 60 (โซดา)',axis:'x',x0:SX,z0:ZW,len:LN(3),pl:9,lab:{x:SX+LN(3)+.6,z:ZW+PD/2}});
+for(i=0;i<5;i++)S(g,{label:String(65+i),name:'แถวที่ '+(65+i)+' (โซดา)',axis:'x',x0:SX,z0:ZW+(i+1)*RP,len:LN(6),pl:18,lab:{x:SX+LN(6)+.6,z:ZW+(i+1)*RP+PD/2}});
+
+/* slots: every zone owns pre-allocated pallet slots (position x level) */
+var nSlots=0, slotZone=[], slotJ=[];
 zones.forEach(function(z){
   if(z.kind!=='stack')return;
-  var P=Math.ceil(z.pl/LV); z.positions=P; z.rem=z.pl-LV*(P-1);
-  var W=(z.x1-z.sx0)/z.per, H=(z.y1-z.y0)/z.lines, idx=0, l, k, v, levels;
-  for(l=0;l<z.lines&&idx<P;l++){
-    for(k=0;k<z.per&&idx<P;k++){
-      levels=(idx===P-1)?z.rem:LV;
-      for(v=0;v<levels;v++){
-        inst.push({z:z.id,cat:z.cat,cx:gx(z.sx0+(k+.5)*W),cz:gz(z.y0+(l+.5)*H),w:(W-GAP)/PX,d:(H-GAP)/PX,lvl:v,j:((idx*7919+v*104729+z.id*31337)%997)/997});
-      }
-      idx++;
-    }
-  }
+  z.slot0=nSlots; var n=(Math.floor((z.maxLen+PG)/PP+1e-6)+EXTRA)*MAXL;
+  for(var k=0;k<n;k++){slotZone.push(z.id);slotJ.push(((nSlots+k)*7919%997)/997)}
+  nSlots+=n;
 });
 
+function capPos(z){return Math.floor((z.len+PG)/PP+1e-6)}
+function calc(z){
+  var L=z.levels, cp=capPos(z), cap=cp*L, plc=Math.min(z.pl,cap), pos=Math.ceil(plc/L), tot=Math.ceil(z.pl/L);
+  return {cap:cap,capPos:cp,placed:plc,pos:pos,rem:pos?plc-(pos-1)*L:0,over:Math.max(0,z.pl-cap),free:Math.max(0,cap-z.pl),totPos:tot,remTot:z.pl-(tot-1)*L};
+}
+function stat(z){
+  var c=calc(z);
+  if(c.over>0)return {t:'ล้น '+c.over+' PL',k:'over',long:'ล้น '+c.over+' PL · แสดงเป็นพาเลทโปร่งแสงสีขาวในภาพ'};
+  if(c.free>0)return {t:'ว่าง '+c.free,k:'free',long:'ยังว่างอีก '+c.free+' PL'};
+  return {t:'เต็ม',k:'ok',long:'เต็มพอดี'};
+}
+
 /* ---------- scene ---------- */
-var scene=new T.Scene();
-var camera=new T.PerspectiveCamera(35,1,1,900);
-var dirty=true;
+var scene=new T.Scene(), camera=new T.PerspectiveCamera(35,1,1,600), dirty=true;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFSoftShadowMap;
 glEl.appendChild(renderer.domElement);
-
 var hemi=new T.HemisphereLight(0xffffff,0x8899aa,.9); scene.add(hemi);
-var sun=new T.DirectionalLight(0xffffff,.55); sun.position.set(-45,95,55); sun.castShadow=true;
+var sun=new T.DirectionalLight(0xffffff,.55); sun.position.set(-18,60,34); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
-var sc=sun.shadow.camera; sc.left=-82; sc.right=82; sc.top=52; sc.bottom=-52; sc.near=10; sc.far=260; sun.shadow.bias=-.0006;
+var sc=sun.shadow.camera; sc.left=-32; sc.right=32; sc.top=38; sc.bottom=-38; sc.near=10; sc.far=160; sun.shadow.bias=-.0006;
 scene.add(sun); scene.add(sun.target);
-
 var controls=new T.OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true; controls.dampingFactor=.09; controls.screenSpacePanning=true;
-controls.minDistance=14; controls.maxDistance=280; controls.maxPolarAngle=Math.PI/2-.05;
+controls.minDistance=6; controls.maxDistance=330; controls.maxPolarAngle=Math.PI/2-.05;
 controls.addEventListener('change',function(){dirty=true});
 
-var box=new T.BoxGeometry(1,1,1);
-var floorMat=new T.MeshLambertMaterial({color:0xcccccc});
-var floorMinX=gx(33)-3, floorMaxX=gx(1412)+3, floorMinZ=gz(100)-3, floorMaxZ=gz(769)+3;
-var floor=new T.Mesh(box,floorMat);
-floor.scale.set(floorMaxX-floorMinX,.6,floorMaxZ-floorMinZ);
-floor.position.set((floorMaxX+floorMinX)/2,-.3,(floorMaxZ+floorMinZ)/2);
-floor.receiveShadow=true; scene.add(floor);
-
-var pickables=[], themed=[];
-function bounds(z){return {x0:gx(z.x0),x1:gx(z.x1),z0:gz(z.y0),z1:gz(z.y1)}}
-function topOf(z){
-  if(z.kind==='stack')return BASE+LV*STEP;
-  if(z.kind==='office'||z.kind==='stairs')return z.h;
-  return z.kind==='area'?.5:.12;
+var box=new T.BoxGeometry(1,1,1), edgesGeo=new T.EdgesGeometry(box);
+var themed=[], pickables=[];
+function lamb(token){var m=new T.MeshLambertMaterial({color:0xaaaaaa});if(token)themed.push({mat:m,token:token});return m}
+function slab(w,h,d,x,y,zz,mat,shadow){
+  var m=new T.Mesh(box,mat); m.scale.set(w,h,d); m.position.set(x,y,zz); m.receiveShadow=true; m.castShadow=!!shadow; scene.add(m); return m;
 }
 
-/* pads, offices, stairs */
-var padToken={stack:'--pad',area:'--pad2',bay:'--bay'};
+/* floor, curb, 5 m grid, dimension lines */
+var floorM=slab(WX,.5,WZ,0,-.25,cz(WZ/2),lamb('--floor'));
+var yardM=slab(YL,.5,YD,0,-.25,cz(WZ+YD/2),lamb('--floor'));
+var curbM=lamb('--line');
+[[WX+.4,.3,.2,0,.15,cz(0)-.1],[.2,.3,WZ,-WX/2-.1,.15,cz(WZ/2)],[.2,.3,WZ,WX/2+.1,.15,cz(WZ/2)],[.2,.3,YD,cx(.5)-.1,.15,cz(WZ+YD/2)],[.2,.3,YD,cx(.5+YL)+.1,.15,cz(WZ+YD/2)],[YL+.2,.3,.2,0,.15,cz(WZ+YD)+.1]].forEach(function(a){slab(a[0],a[1],a[2],a[3],a[4],a[5],curbM)});
+var gridArr=[], k;
+for(k=5;k<WX;k+=5)gridArr.push(cx(k),.01,cz(0),cx(k),.01,cz(WZ));
+for(k=5;k<WZ;k+=5)gridArr.push(cx(0),.01,cz(k),cx(WX),.01,cz(k));
+var gridMat=new T.LineBasicMaterial({color:0xcccccc}); themed.push({mat:gridMat,token:'--grid'});
+function lines(arr,mat){var gm=new T.BufferGeometry();gm.setAttribute('position',new T.Float32BufferAttribute(arr,3));var l=new T.LineSegments(gm,mat);scene.add(l);return l}
+lines(gridArr,gridMat);
+var dimMat=new T.LineBasicMaterial({color:0x777777}); themed.push({mat:dimMat,token:'--muted'});
+var dz=cz(0)-1.6, dxx=cx(0)-1.8, dxr=cx(WX)+1.8, dzb=cz(WZ+YD)+1.6, dim=[];
+function hdim(x0,x1,zz){dim.push(x0,.02,zz,x1,.02,zz, x0,.02,zz-.4,x0,.02,zz+.4, x1,.02,zz-.4,x1,.02,zz+.4)}
+function vdim(xx,z0,z1){dim.push(xx,.02,z0,xx,.02,z1, xx-.4,.02,z0,xx+.4,.02,z0, xx-.4,.02,z1,xx+.4,.02,z1)}
+hdim(cx(0),cx(WX),dz); vdim(dxx,cz(0),cz(WZ)); vdim(dxr,cz(WZ),cz(WZ+YD)); hdim(cx(.5),cx(.5+YL),dzb);
+lines(dim,dimMat);
+
+var railMat=new T.LineBasicMaterial({color:0x777777}); themed.push({mat:railMat,token:'--muted'});
+/* non-stack areas */
 zones.forEach(function(z){
-  var b=bounds(z), w=b.x1-b.x0, d=b.z1-b.z0, cx=(b.x0+b.x1)/2, cz=(b.z0+b.z1)/2, m;
-  if(z.kind==='office'){
-    m=new T.Mesh(box,new T.MeshLambertMaterial({color:0xaaaaaa}));
-    m.scale.set(w-.4,z.h,d-.2); m.position.set(cx,z.h/2,cz); m.castShadow=true; m.receiveShadow=true;
-    themed.push({mat:m.material,token:'--office'});
-  }else if(z.kind==='stairs'){
-    var n=8, sw=(w-.4)/n, k, s;
-    var g=new T.Group();
-    for(k=0;k<n;k++){
-      s=new T.Mesh(box,new T.MeshLambertMaterial({color:0xaaaaaa}));
-      var hh=(k+1)*z.h/n;
-      s.scale.set(sw-.05,hh,d-.8); s.position.set(b.x0+.2+sw*(k+.5),hh/2,cz);
-      s.castShadow=true; s.receiveShadow=true; s.userData.zone=z.id; g.add(s); pickables.push(s);
-      themed.push({mat:s.material,token:'--office'});
-    }
-    scene.add(g);
-    m=new T.Mesh(box,new T.MeshLambertMaterial({color:0xaaaaaa}));
-    m.scale.set(w-.2,.04,d-.2); m.position.set(cx,.02,cz);
-    themed.push({mat:m.material,token:'--pad2'});
-  }else{
-    var hgt=z.kind==='area'?.12:(z.kind==='bay'?.03:.04);
-    m=new T.Mesh(box,new T.MeshLambertMaterial({color:0xaaaaaa}));
-    m.scale.set(w-.2,hgt,d-.2); m.position.set(cx,hgt/2,cz); m.receiveShadow=true;
-    themed.push({mat:m.material,token:padToken[z.kind]});
+  if(z.kind==='stack')return;
+  var X=cx(z.x0+z.w/2), Z=cz(z.z0+z.d/2), m, n, st, hh, run;
+  function reg(mesh){mesh.userData.zone=z.id;pickables.push(mesh);return mesh}
+  if(z.kind==='deck'){
+    reg(slab(z.w-.2,.3,z.d-.2,X,z.elev-.15,Z,lamb('--office2'),true));
+    var rl=[], ax=cx(z.x0)+.1, bx=cx(z.x0+z.w)-.1, az=cz(z.z0)+.1, bz=cz(z.z0+z.d)-.1, sx0=cx(fx(1294))-.1;
+    [1.0,.5].forEach(function(hh2){
+      var yy=z.elev+hh2;
+      rl.push(ax,yy,az,sx0,yy,az, bx,yy,az,bx,yy,bz, bx,yy,bz,ax,yy,bz, ax,yy,bz,ax,yy,az);
+    });
+    [[ax,az],[bx,bz],[ax,bz],[sx0,az]].forEach(function(q){rl.push(q[0],z.elev,q[1],q[0],z.elev+1.0,q[1])});
+    lines(rl,railMat);
+    return;
   }
-  m.userData.zone=z.id; scene.add(m); pickables.push(m);
+  if(z.kind==='office'){
+    m=slab(z.w-.2,z.h,z.d-.2,X,z.h/2,Z,lamb('--office'),true);
+    if(z.h>4){reg(slab(z.w-.14,1.5,z.d-.14,X,z.h*.68,Z,lamb('--glass'),true));reg(slab(z.w-.14,1.5,z.d-.14,X,z.h*.3,Z,lamb('--glass'),true))}
+  }else if(z.kind==='stairs'){
+    n=16; run=z.d/n;
+    for(k=0;k<n;k++){
+      hh=(k+1)*z.h/n; st=slab(z.w-.2,hh,run-.02,X,hh/2,cz(z.z0)+run*(k+.5),lamb('--office'),true);
+      reg(st);
+    }
+    m=slab(z.w-.1,.04,z.d-.1,X,.02,Z,lamb('--pad2'));
+  }else if(z.kind==='area'){
+    m=slab(z.w-.1,.14,z.d-.1,X,.07,Z,lamb('--pad2'));
+  }else{
+    m=slab(z.w-.1,.03,z.d-.1,X,.015,Z,lamb('--bay'));
+  }
+  reg(m);
 });
-
-/* outlines: solid for work areas, dashed for loading bays */
-function seg(arr,x0,z0,x1,z1,y){arr.push(x0,y,z0,x1,y,z1)}
-function rect(arr,b,y){seg(arr,b.x0,b.z0,b.x1,b.z0,y);seg(arr,b.x1,b.z0,b.x1,b.z1,y);seg(arr,b.x1,b.z1,b.x0,b.z1,y);seg(arr,b.x0,b.z1,b.x0,b.z0,y)}
-var solid=[], dashed=[];
+var dashArr=[];
 zones.forEach(function(z){
-  var b=bounds(z);
-  if(z.kind==='bay'){rect(dashed,b,.07);return}
-  if(z.kind==='office'||z.kind==='stairs')return;
-  rect(solid,b,.14);
-  if(z.row){seg(solid,gx(z.sx0),b.z0,gx(z.sx0),b.z1,.14)}
+  if(z.kind!=='bay'&&z.kind!=='area')return;
+  var a=cx(z.x0), b=cx(z.x0+z.w), c=cz(z.z0), d=cz(z.z0+z.d), y=z.kind==='bay'?.05:.16;
+  dashArr.push(a,y,c,b,y,c, b,y,c,b,y,d, b,y,d,a,y,d, a,y,d,a,y,c);
 });
-function lineObj(arr,mat){
-  var g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(arr,3));
-  var l=new T.LineSegments(g,mat); if(mat.isLineDashedMaterial)l.computeLineDistances(); scene.add(l); return l;
-}
-var solidMat=new T.LineBasicMaterial({color:0x777777});
-var dashMat=new T.LineDashedMaterial({color:0x777777,dashSize:1.2,gapSize:.9});
-lineObj(solid,solidMat); lineObj(dashed,dashMat);
+var dashMat=new T.LineDashedMaterial({color:0x777777,dashSize:.8,gapSize:.6}); themed.push({mat:dashMat,token:'--mark'});
+lines(dashArr,dashMat).computeLineDistances();
+var guideArr=[]; [MID0,MID0+MIDW].forEach(function(x){guideArr.push(cx(x),.06,cz(1.2),cx(x),.06,cz(WZ-WALL))});
+var guideMat=new T.LineDashedMaterial({color:0x2255ff,dashSize:.5,gapSize:.35}); themed.push({mat:guideMat,token:'--accent'});
+lines(guideArr,guideMat).computeLineDistances();
+var wallArr=[]; function wl(x0,z0,x1,z1){wallArr.push(cx(x0),.07,cz(z0),cx(x1),.07,cz(z1))}
+wl(WALL,TOP0,WALL,WZ-WALL); wl(WX-WALL,TOP0,WX-WALL,WZ-WALL); wl(WALL,TOP0,WX-WALL,TOP0); wl(WALL,WZ-WALL,WX-WALL,WZ-WALL);
+var wallMat=new T.LineDashedMaterial({color:0x777777,dashSize:.3,gapSize:.3}); themed.push({mat:wallMat,token:'--muted'});
 
-/* pallets + goods (instanced) */
-var dummy=new T.Object3D(), col=new T.Color();
-var palletMesh=new T.InstancedMesh(box,new T.MeshLambertMaterial({color:0xffffff}),inst.length);
-palletMesh.castShadow=true; palletMesh.receiveShadow=true;
-palletMesh.userData.zones=inst.map(function(o){return o.z});
-scene.add(palletMesh); pickables.push(palletMesh);
-var goods={}, goodsList={};
-Object.keys(CATS).forEach(function(c){
-  var list=inst.filter(function(o){return o.cat===c});
-  list.forEach(function(o,i){o.gi=i});
-  var m=new T.InstancedMesh(box,new T.MeshLambertMaterial({color:0xffffff}),list.length);
-  m.castShadow=true; m.receiveShadow=true; m.userData.zones=list.map(function(o){return o.z});
-  scene.add(m); pickables.push(m); goods[c]=m; goodsList[c]=list;
+
+/* stack zones: footprint strip + outline */
+var edgeMat=new T.LineBasicMaterial({color:0x777777}); themed.push({mat:edgeMat,token:'--mark'});
+var padC=new T.Color(), warnMix=new T.Color();
+zones.forEach(function(z){
+  if(z.kind!=='stack')return;
+  z.stripMat=new T.MeshLambertMaterial({color:0xaaaaaa});
+  z.strip=new T.Mesh(box,z.stripMat); z.strip.receiveShadow=true; z.strip.userData.zone=z.id; scene.add(z.strip); pickables.push(z.strip);
+  z.edge=new T.LineSegments(edgesGeo,edgeMat); scene.add(z.edge);
 });
-inst.forEach(function(o,i){o.pi=i});
 
-var show=3, catOn={beer:true,can:true,soda:true,water:true};
-function layout(){
-  inst.forEach(function(o){
-    var on=o.lvl<show&&catOn[o.cat], y=BASE+o.lvl*STEP, e=1e-4;
-    dummy.position.set(o.cx,y+PH/2,o.cz); dummy.scale.set(on?o.w:e,on?PH:e,on?o.d:e); dummy.updateMatrix();
-    palletMesh.setMatrixAt(o.pi,dummy.matrix);
-    dummy.position.set(o.cx,y+PH+GH/2,o.cz); dummy.scale.set(on?o.w*.94:e,on?GH:e,on?o.d*.9:e); dummy.updateMatrix();
-    goods[o.cat].setMatrixAt(o.gi,dummy.matrix);
+/* pallets + goods (instanced, one slot per position x level) */
+function mergeGeos(list){
+  var pos=[],nor=[],uv=[],idx=[],off=0;
+  list.forEach(function(g){
+    var p=g.attributes.position.array,n=g.attributes.normal.array,u=g.attributes.uv.array,ix=g.index.array,k;
+    for(k=0;k<p.length;k++){pos.push(p[k]);nor.push(n[k])}
+    for(k=0;k<u.length;k++)uv.push(u[k]);
+    for(k=0;k<ix.length;k++)idx.push(ix[k]+off);
+    off+=p.length/3;
   });
-  palletMesh.instanceMatrix.needsUpdate=true;
-  Object.keys(goods).forEach(function(c){goods[c].instanceMatrix.needsUpdate=true});
-  var n=inst.filter(function(o){return o.lvl<show&&catOn[o.cat]}).length;
-  document.getElementById('count').textContent='แสดง '+fmt(n)+' พาเลท';
-  dirty=true;
+  var m=new T.BufferGeometry();
+  m.setAttribute('position',new T.Float32BufferAttribute(pos,3)); m.setAttribute('normal',new T.Float32BufferAttribute(nor,3)); m.setAttribute('uv',new T.Float32BufferAttribute(uv,2)); m.setIndex(idx);
+  return m;
 }
+function buildPallet(){
+  var parts=[], tT=.022, tB=.022, hr=PH-tT-tB, nb=7, bw=.1, gp=(PD-nb*bw)/(nb-1), q;
+  function add(w,h,d,x,y,zz){var g=new T.BoxGeometry(w,h,d); g.translate(x,y,zz); parts.push(g)}
+  for(q=0;q<nb;q++)add(PW,tT,bw,0,PH-tT/2,-PD/2+bw/2+q*(bw+gp));          /* top deck boards, 1.0 m long */
+  [-PW/2+.05,0,PW/2-.05].forEach(function(x){add(.1,hr,PD,x,tB+hr/2,0)});  /* three runners, 1.2 m long */
+  [-PD/2+.05,0,PD/2-.05].forEach(function(zz){add(PW,tB,.1,0,tB/2,zz)});   /* bottom boards */
+  return mergeGeos(parts);
+}
+var palletGeo=buildPallet();
+var palletMesh=new T.InstancedMesh(palletGeo,new T.MeshLambertMaterial({color:0xffffff}),nSlots);
+var crateTex=(function(){var c=document.createElement('canvas');c.width=c.height=128;var g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,128,128);g.strokeStyle='rgba(0,0,0,.28)';g.lineWidth=3;
+  for(var a=0;a<=4;a++){g.beginPath();g.moveTo(a*32,0);g.lineTo(a*32,128);g.stroke()}
+  for(a=0;a<=5;a++){var y=a*128/5;g.beginPath();g.moveTo(0,y);g.lineTo(128,y);g.stroke()}
+  var t=new T.CanvasTexture(c);return t})();
+var goodsMesh=new T.InstancedMesh(box,new T.MeshLambertMaterial({color:0xffffff,map:crateTex}),nSlots);
+[palletMesh,goodsMesh].forEach(function(m){m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;scene.add(m);if(m===goodsMesh)pickables.push(m)});
+var ghostMat=new T.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:.62,depthWrite:false});
+var ghostMesh=new T.InstancedMesh(box,ghostMat,nSlots); ghostMesh.frustumCulled=false; scene.add(ghostMesh);
+var showOver=true;
+var ghostEdgeMat=new T.LineBasicMaterial({color:0x777777,transparent:true,opacity:.8}); themed.push({mat:ghostEdgeMat,token:'--ink'});
+var GE_MAX=4000, geArr=new Float32Array(GE_MAX*24*3), geGeo=new T.BufferGeometry();
+geGeo.setAttribute('position',new T.BufferAttribute(geArr,3)); geGeo.setDrawRange(0,0);
+var geLines=new T.LineSegments(geGeo,ghostEdgeMat); geLines.frustumCulled=false; scene.add(geLines);
+function rebuildGhostEdges(){
+  var n=0, o=0;
+  function seg(a,b,c,d,e,f){geArr[o++]=a;geArr[o++]=b;geArr[o++]=c;geArr[o++]=d;geArr[o++]=e;geArr[o++]=f}
+  zones.forEach(function(z){
+    if(z.kind!=='stack'||!z.ghosts)return;
+    z.ghosts.forEach(function(q){
+      if(n>=GE_MAX)return; n++;
+      var x0=q.X-q.sx/2,x1=q.X+q.sx/2,y0=q.y,y1=q.y+q.h,z0=q.Z-q.sz/2,z1=q.Z+q.sz/2;
+      seg(x0,y0,z0,x1,y0,z0); seg(x1,y0,z0,x1,y0,z1); seg(x1,y0,z1,x0,y0,z1); seg(x0,y0,z1,x0,y0,z0);
+      seg(x0,y1,z0,x1,y1,z0); seg(x1,y1,z0,x1,y1,z1); seg(x1,y1,z1,x0,y1,z1); seg(x0,y1,z1,x0,y1,z0);
+      seg(x0,y0,z0,x0,y1,z0); seg(x1,y0,z0,x1,y1,z0); seg(x1,y0,z1,x1,y1,z1); seg(x0,y0,z1,x0,y1,z1);
+    });
+  });
+  geGeo.attributes.position.needsUpdate=true; geGeo.setDrawRange(0,n*24);
+}
+var dummy=new T.Object3D(), col=new T.Color(), catOn={beer:true,can1:true,can2:true,water:true,soda:true};
+
+var viewLv=3;   /* dock buttons 1/2/3 only choose how many layers are drawn; capacity is untouched */
+function placeZone(z){
+  z.ghosts=[];
+  var c=calc(z), nP=Math.floor((z.maxLen+PG)/PP+1e-6)+EXTRA, p,l,idx,on,gh,lim,glim,X,Z,y,sx,sz,e=1e-4;
+  for(p=0;p<nP;p++){
+    lim=p<c.pos?(p===c.pos-1?c.rem:z.levels):0;
+    glim=(showOver&&viewLv>=MAXL&&c.over>0&&p>=c.capPos&&p<c.totPos)?(p===c.totPos-1?c.remTot:z.levels):0;
+    for(l=0;l<MAXL;l++){
+      idx=z.slot0+p*MAXL+l; on=l<lim&&l<viewLv&&catOn[z.cat]; gh=l<glim&&catOn[z.cat]; y=BASE+l*STEP;
+      if(z.axis==='x'){X=cx(z.x0+p*PP+PW/2);Z=cz(z.z0+z.D/2);sx=PW-GAPG;sz=z.D-GAPG}
+      else{X=cx(z.x0+z.D/2);Z=cz(z.z0+p*PP+PW/2);sx=z.D-GAPG;sz=PW-GAPG}
+      dummy.rotation.set(0,z.axis==='x'?0:Math.PI/2,0);
+      dummy.position.set(X,y,Z); dummy.scale.set(on?1:e,on?1:e,on?1:e); dummy.updateMatrix(); palletMesh.setMatrixAt(idx,dummy.matrix);
+      dummy.rotation.set(0,0,0);
+      dummy.position.set(X,y+PH+GH/2,Z); dummy.scale.set(on?sx:e,on?GH:e,on?sz:e); dummy.updateMatrix(); goodsMesh.setMatrixAt(idx,dummy.matrix);
+      if(gh)z.ghosts.push({X:X,y:y,Z:Z,sx:sx,sz:sz,h:PH+GH});
+      dummy.position.set(X,y+(PH+GH)/2,Z); dummy.scale.set(gh?sx:e,gh?PH+GH:e,gh?sz:e); dummy.updateMatrix(); ghostMesh.setMatrixAt(idx,dummy.matrix);
+    }
+  }
+}
+function updateZone(z){
+  if(z.kind!=='stack')return;
+  var c=calc(z), w=z.axis==='x'?z.len:z.D, d=z.axis==='x'?z.D:z.len;
+  z.strip.scale.set(w,.05,d); z.strip.position.set(cx(z.x0+w/2),.025,cz(z.z0+d/2));
+  z.edge.scale.copy(z.strip.scale); z.edge.position.copy(z.strip.position);
+  z.stripMat.color.copy(c.over>0?warnMix:padC);
+  if(z.tag)z.tag.el.classList.toggle('warn',c.over>0);
+  placeZone(z); dirty=true;
+}
+function flushInstances(){palletMesh.instanceMatrix.needsUpdate=true;goodsMesh.instanceMatrix.needsUpdate=true;ghostMesh.instanceMatrix.needsUpdate=true;rebuildGhostEdges();dirty=true}
 
 /* ---------- theme ---------- */
-var rootStyle=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()};
-var tok=function(n){return new T.Color(rootStyle(n))};
+var rs=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()};
+var tk=function(n){return new T.Color(rs(n))};
 function applyTheme(){
-  var bg=tok('--bg'); scene.background=bg;
-  floorMat.color.copy(tok('--floor'));
-  themed.forEach(function(t){t.mat.color.copy(tok(t.token))});
-  solidMat.color.copy(tok('--line')); dashMat.color.copy(tok('--line'));
-  hemi.intensity=parseFloat(rootStyle('--hemi'))||.9; sun.intensity=parseFloat(rootStyle('--sun'))||.55;
-  var wood=tok('--wood'), cc={};
-  Object.keys(CATS).forEach(function(c){cc[c]=tok('--'+c)});
-  inst.forEach(function(o){
-    col.copy(wood).offsetHSL(0,0,(o.j-.5)*.07); palletMesh.setColorAt(o.pi,col);
-    col.copy(cc[o.cat]).offsetHSL(0,0,(((o.j*5)%1)-.5)*.07); goods[o.cat].setColorAt(o.gi,col);
-  });
-  palletMesh.instanceColor.needsUpdate=true;
-  Object.keys(goods).forEach(function(c){goods[c].instanceColor.needsUpdate=true});
-  selVolMat.color.copy(tok('--accent')); selEdgeMat.color.copy(tok('--accent'));
-  dirty=true;
+  scene.background=tk('--bg');
+  themed.forEach(function(t){t.mat.color.copy(tk(t.token))});
+  padC.copy(tk('--pad')); warnMix.copy(tk('--warn')).lerp(padC,.5);
+  hemi.intensity=parseFloat(rs('--hemi'))||.9; sun.intensity=parseFloat(rs('--sun'))||.55;
+  var wood=tk('--wood'), cc={}, s, z;
+  CAT_ORDER.forEach(function(c){cc[c]=tk('--'+c)});
+  for(s=0;s<nSlots;s++){
+    z=zones[slotZone[s]];
+    col.copy(wood).offsetHSL(0,0,(slotJ[s]-.5)*.07); palletMesh.setColorAt(s,col);
+    col.copy(cc[z.cat]).offsetHSL(0,0,(((slotJ[s]*5)%1)-.5)*.07); goodsMesh.setColorAt(s,col);
+  }
+  palletMesh.instanceColor.needsUpdate=true; goodsMesh.instanceColor.needsUpdate=true;
+  selVol.color.copy(tk('--accent')); selEdge.color.copy(tk('--accent'));
+  zones.forEach(updateZone); flushInstances();
 }
 
-/* ---------- selection ---------- */
-var selVolMat=new T.MeshBasicMaterial({color:0xff0066,transparent:true,opacity:.15,depthWrite:false});
-var selEdgeMat=new T.LineBasicMaterial({color:0xff0066});
-var sel=new T.Group();
-sel.add(new T.Mesh(box,selVolMat));
-sel.add(new T.LineSegments(new T.EdgesGeometry(box),selEdgeMat));
-sel.visible=false; scene.add(sel);
-
-var infoEl=document.getElementById('info'), selected=null;
-function dl(label,val,cls){return '<div'+(cls&&cls.indexOf('wide')>-1?' class="wide"':'')+'><dt>'+label+'</dt><dd'+(cls&&cls.indexOf('th')>-1?' class="th"':'')+'>'+val+'</dd></div>'}
-var KIND={office:'ออฟฟิศ',area:'พื้นที่ใช้งาน',bay:'ลานโหลดสินค้า',stairs:'บันได'};
-function select(id){
-  var z=id==null?null:zones[id]; selected=z;
-  var empty=document.getElementById('iEmpty'), dlEl=document.getElementById('iDl');
-  if(!z){
-    sel.visible=false; empty.hidden=false; dlEl.innerHTML='';
-    document.getElementById('iKind').textContent='รายละเอียด'; document.getElementById('iName').textContent='ยังไม่ได้เลือก';
-    document.getElementById('iDot').style.background='var(--line)'; dirty=true; return;
-  }
-  empty.hidden=true;
-  var b=bounds(z), h=topOf(z)+.2;
-  sel.scale.set(b.x1-b.x0,h,b.z1-b.z0); sel.position.set((b.x0+b.x1)/2,h/2,(b.z0+b.z1)/2); sel.visible=true;
-  var html='';
-  if(z.kind==='stack'){
-    var c=CATS[z.cat];
-    document.getElementById('iKind').textContent=c.name;
-    document.getElementById('iDot').style.background='var(--'+z.cat+')';
-    html+=dl('พาเลททั้งหมด',z.pl+' PL');
-    html+=dl('ตำแหน่งบนพื้น',z.positions);
-    html+=dl('การวาง',z.row?'บน 7 · ล่าง 7':z.lines+' แถว × '+z.per,'th');
-    html+=dl('ซ้อน',LV+' ชั้น','th');
-    var f=z.rem===LV?z.positions+' ตำแหน่ง × '+LV+' ชั้น = '+z.pl+' PL':(z.positions-1)+' × '+LV+' ชั้น + 1 × '+z.rem+' ชั้น = '+z.pl+' PL';
-    html+=dl('จำนวน',f,'wide th');
-    html+=dl('สินค้า',fmt(z.pl*c.per)+' '+c.unit+' ('+c.per+' ต่อพาเลท)','wide th');
-  }else{
-    document.getElementById('iKind').textContent=KIND[z.kind];
-    document.getElementById('iDot').style.background='var(--line)';
-    html+=dl('ประเภท',KIND[z.kind],'wide th');
-  }
-  document.getElementById('iName').textContent=z.name;
-  dlEl.innerHTML=html; dirty=true;
-}
-document.getElementById('infoClose').addEventListener('click',function(){select(null)});
+/* ---------- selection volume ---------- */
+var selVol=new T.MeshBasicMaterial({color:0x2255ff,transparent:true,opacity:.14,depthWrite:false});
+var selEdge=new T.LineBasicMaterial({color:0x2255ff});
+var sel=new T.Group(); sel.add(new T.Mesh(box,selVol)); sel.add(new T.LineSegments(edgesGeo,selEdge)); sel.visible=false; scene.add(sel);
 
 /* ---------- labels ---------- */
-var labelsEl=document.getElementById('labels'), labels=[], showLabels=true;
-function tag(text,x,y,zz,cls){
+var labelsEl=document.getElementById('labels'), tags=[], showLabels=false;
+function tag(text,x,y,zz,cls,isNum,meta){
   var el=document.createElement('div'); el.className='tag'+(cls?' '+cls:''); el.textContent=text; labelsEl.appendChild(el);
-  labels.push({el:el,pos:new T.Vector3(x,y,zz)});
+  var t={el:el,pos:new T.Vector3(x,y,zz),num:!!isNum,meta:meta||{}}; tags.push(t); return t;
 }
 zones.forEach(function(z){
-  var b=bounds(z), cx=(b.x0+b.x1)/2, cz=(b.z0+b.z1)/2;
-  if(z.kind==='stack'){
-    if(z.row){tag(String(z.row),gx((z.x0+z.sx0)/2),.3,cz,'num')}
-    else{tag(z.short+' · '+z.pl+' PL',cx,topOf(z)+.8,cz)}
-  }else if(z.kind==='office'){tag(z.name,cx,z.h+.6,cz)}
-  else if(z.kind==='stairs'){tag(z.name,cx,z.h+.8,cz)}
-  else{tag(z.name,cx,.9,cz)}
+  if(z.kind==='stack'){z.tag=tag(z.label,cx(z.lab.x),.35,cz(z.lab.z),'num',true)}
+  else if(z.kind==='bay'||z.kind==='area')tag(z.name,cx(z.x0+z.w/2),.9,cz(z.z0+z.d/2),'',false,{zid:z.id});
+  else if(z.kind==='deck')tag(z.name,cx(z.x0+z.w/2),z.elev+.9,cz(z.z0+z.d*.75),'',false,{zid:z.id});
+  else if(z.front)tag(z.name,cx(z.x0+z.w/2),1.5,cz(z.z0+z.d*.25),'',false,{zid:z.id});
+  else tag(z.name,cx(z.x0+z.w/2),z.h+.7,cz(z.z0+z.d/2),'',false,{zid:z.id});
 });
+tag('เบียร์ลังใหญ่ · แถว 1–20',cx(4.3),.4,cz(LZ-.9),'',false,{gid:'L'});
+tag('เบียร์ลังใหญ่ · แถว 21–34',cx(37.8),.4,cz(19.1),'',false,{gid:'R'});
+tag('เบียร์ลังใหญ่ · แถว 35–38',cx(MID0+MIDW/2),.4,cz(ZR-.6),'',false,{gid:'M'});
+tag('เลม่อน + เบียร์กระป๋อง · 39–49',cx(MID0+MIDW/2),.4,cz(TOP0+5+1.6),'',false,{gid:'C1'});
+tag('เบียร์กระป๋อง · 50–58',cx(MID0+MIDW+3),.4,cz(Z50+2.5),'',false,{gid:'C2'});
+tag('น้ำ · 59–64',cx(MID0-3.5),.4,cz(ZW+3.6),'',false,{gid:'W'});
+tag('โซดา · 60–69',cx(MID0+7+6+3.8),.4,cz(ZW+3.6),'',false,{gid:'S'});
+tag('ส่วนกลาง กว้าง '+MIDW.toFixed(1)+' ม.',cx(MID0+MIDW/2),.4,cz(10.5));
+tag('42 ม.',0,.3,dz-.9,'dim',true);
+tag('35.8 ม.',dxx-1.3,.3,cz(WZ/2),'dim',true);
+tag('14 ม.',dxr+1.1,.3,cz(WZ+YD/2),'dim',true);
+tag('41 ม.',0,.3,dzb+.9,'dim',true);
 var lv=new T.Vector3();
 function updateLabels(){
   var w=glEl.clientWidth, h=glEl.clientHeight;
-  labels.forEach(function(L){
+  tags.forEach(function(L){
     lv.copy(L.pos).project(camera);
-    var vis=showLabels&&lv.z>-1&&lv.z<1&&Math.abs(lv.x)<1.15&&Math.abs(lv.y)<1.15;
+    var vis=(L.num||showLabels||(selected&&(L.meta.zid===selected.id||(selected.kind==='stack'&&L.meta.gid===selected.g.id))))&&lv.z>-1&&lv.z<1&&Math.abs(lv.x)<1.15&&Math.abs(lv.y)<1.15;
     L.el.hidden=!vis;
     if(vis)L.el.style.transform='translate('+((lv.x*.5+.5)*w).toFixed(1)+'px,'+((-lv.y*.5+.5)*h).toFixed(1)+'px) translate(-50%,-50%)';
   });
 }
 
-/* ---------- camera views ---------- */
-var V3=function(x,y,z){return new T.Vector3(x,y,z)};
-var VIEWS={
-  iso:{target:V3(0,0,1),dir:V3(-.3,.8,.62),w:146,h:96},
-  top:{target:V3(0,0,0),dir:V3(0,1,.02),w:146,h:72},
-  rows1:{target:V3(-47.6,1,1),dir:V3(.15,.7,.7),w:46,h:44},
-  rows2:{target:V3(48.1,1,-15.5),dir:V3(-.15,.7,.7),w:44,h:38},
-  mid:{target:V3(.5,1,-5.5),dir:V3(-.1,.78,.62),w:44,h:60}
-};
-function viewPose(key){
-  var p=VIEWS[key], tf=Math.tan(T.MathUtils.degToRad(camera.fov/2));
-  var dist=Math.max((p.h/2)/tf,(p.w/2)/(tf*camera.aspect))*1.12;
-  return {pos:p.target.clone().addScaledVector(p.dir.clone().normalize(),dist),target:p.target.clone()};
+/* ---------- persistence ---------- */
+var LS='wh3d-v17';
+function save(){try{var o={};zones.forEach(function(z){if(z.kind==='stack')o[z.key]=[z.pl,z.levels,z.len]});localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
+function clampZ(z){
+  z.pl=Math.max(0,Math.min(9999,Math.round(+z.pl)||0)); z.levels=Math.max(1,Math.min(MAXL,Math.round(+z.levels)||3));
+  z.len=Math.max(1,Math.min(z.maxLen,Math.round((+z.len||z.len0)*100)/100));
 }
-var tw=null, curView='iso';
-function fly(key,instant){
-  var pose=viewPose(key); curView=key;
-  if(instant){camera.position.copy(pose.pos);controls.target.copy(pose.target);controls.update();dirty=true;return}
-  tw={t0:performance.now(),d:800,p0:camera.position.clone(),p1:pose.pos,g0:controls.target.clone(),g1:pose.target};
-}
-function stepTween(now){
-  if(!tw)return;
-  var k=Math.min(1,(now-tw.t0)/tw.d), e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
-  camera.position.lerpVectors(tw.p0,tw.p1,e); controls.target.lerpVectors(tw.g0,tw.g1,e);
-  if(k>=1)tw=null; dirty=true;
-}
-controls.addEventListener('start',function(){tw=null; setView(null)});
+try{var saved=JSON.parse(localStorage.getItem(LS)||'null');if(saved)zones.forEach(function(z){var v=saved[z.key];if(z.kind==='stack'&&v){z.pl=v[0];z.levels=v[1];z.len=v[2];clampZ(z)}})}catch(e){}
 
-/* ---------- UI wiring ---------- */
-function setView(key){
-  document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===key))});
-}
-document.querySelectorAll('[data-view]').forEach(function(b){
-  b.addEventListener('click',function(){fly(b.dataset.view);setView(b.dataset.view)});
-});
-document.querySelectorAll('[data-lv]').forEach(function(b){
-  b.addEventListener('click',function(){
-    show=parseInt(b.dataset.lv,10);
-    document.querySelectorAll('[data-lv]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});
-    layout();
+/* ---------- UI ---------- */
+var $=function(id){return document.getElementById(id)};
+var selected=null;
+var inPL=$('inPL'), inLen=$('inLen'), applyGroup=$('applyGroup');
+
+/* list of all zones */
+var listEl=$('list');
+groups.forEach(function(gr){
+  var h=document.createElement('div'); h.className='gh'; h.innerHTML='<span></span><span></span>'; listEl.appendChild(h); gr.head=h;
+  gr.zs.forEach(function(z){
+    var r=document.createElement('div'); r.className='lr';
+    var b=document.createElement('button'); b.type='button'; b.className='nm'; b.textContent=z.name; b.addEventListener('click',function(){select(z.id)});
+    var inp=document.createElement('input'); inp.type='number'; inp.className='num-in'; inp.min='0'; inp.step='1'; inp.inputMode='numeric'; inp.setAttribute('aria-label','จำนวนพาเลท '+z.name);
+    inp.addEventListener('focus',function(){if(selected!==z)select(z.id)});
+    inp.addEventListener('input',function(){z.pl=Math.max(0,Math.round(+inp.value)||0);commit([z],true)});
+    var s=document.createElement('span'); s.className='s';
+    r.appendChild(b); r.appendChild(inp); r.appendChild(s); listEl.appendChild(r);
+    z.ui={row:r,inp:inp,st:s};
   });
 });
-document.getElementById('tgLabels').addEventListener('click',function(e){
-  showLabels=!showLabels; e.currentTarget.setAttribute('aria-pressed',String(showLabels)); dirty=true;
+
+function refreshAll(){
+  var tot={placed:0,entered:0,cap:0,over:0}, per={};
+  CAT_ORDER.forEach(function(c){per[c]={placed:0,entered:0,cap:0,over:0}});
+  zones.forEach(function(z){
+    if(z.kind!=='stack')return;
+    var c=calc(z), p=per[z.cat], s=stat(z);
+    p.placed+=c.placed; p.entered+=z.pl; p.cap+=c.cap; p.over+=c.over;
+    if(document.activeElement!==z.ui.inp)z.ui.inp.value=z.pl;
+    z.ui.st.textContent=s.t; z.ui.st.className='s st '+s.k;
+  });
+  groups.forEach(function(gr){
+    var n=0;gr.zs.forEach(function(z){n+=calc(z).placed});
+    gr.head.firstChild.textContent=gr.name; gr.head.lastChild.textContent=fmt(n)+' PL';
+  });
+  var visible=0;
+  CAT_ORDER.forEach(function(c){
+    var p=per[c], b=sumBtns[c];
+    b.querySelector('.p').textContent=fmt(p.placed)+' PL';
+    b.querySelector('.m').innerHTML='= '+fmt(p.placed*CATS[c].per)+' '+CATS[c].unit+' · ใส่ไว้ '+fmt(p.entered)+' · รองรับสูงสุด '+fmt(p.cap)+(p.over?' · <b>ล้น '+fmt(p.over)+'</b>':'');
+    tot.placed+=p.placed; tot.entered+=p.entered; tot.cap+=p.cap; tot.over+=p.over;
+    if(catOn[c])visible+=p.placed;
+  });
+  $('total').innerHTML='วางได้จริง <b>'+fmt(tot.placed)+'</b> PL จากที่ใส่ไว้ '+fmt(tot.entered)+' · พื้นที่รองรับสูงสุด '+fmt(tot.cap)+(tot.over?' · <span class="w">ล้น '+fmt(tot.over)+' PL</span>':'');
+  $('count').textContent='แสดง '+fmt(visible)+' พาเลท';
+  document.querySelectorAll('[data-gl]').forEach(function(b){b.setAttribute('aria-pressed',String(+b.dataset.gl===viewLv))});
+}
+
+var sumEl=$('sum'), sumBtns={};
+CAT_ORDER.forEach(function(c){
+  var b=document.createElement('button'); b.type='button'; b.className='cat'; b.style.setProperty('--c','var(--'+c+')'); b.setAttribute('aria-pressed','true');
+  b.innerHTML='<i></i><span class="n">'+CATS[c].name+'</span><span class="p"></span><span class="m"></span>';
+  b.addEventListener('click',function(){catOn[c]=!catOn[c];b.setAttribute('aria-pressed',String(catOn[c]));zones.forEach(placeZone);flushInstances();refreshAll()});
+  sumEl.appendChild(b); sumBtns[c]=b;
 });
 
-var totals={}, totalAll=0;
-zones.forEach(function(z){if(z.kind==='stack'){totals[z.cat]=(totals[z.cat]||0)+z.pl;totalAll+=z.pl}});
-document.getElementById('totalCap').textContent=fmt(totalAll);
-var legendList=document.getElementById('legendList');
-['beer','can','soda','water'].forEach(function(c){
-  var li=document.createElement('li'), b=document.createElement('button'), C=CATS[c];
-  b.type='button'; b.className='cat'; b.style.setProperty('--c','var(--'+c+')'); b.setAttribute('aria-pressed','true');
-  b.innerHTML='<i></i><span class="n">'+C.name+'</span><span class="p">'+fmt(totals[c])+' PL</span><span class="m">'+fmt(totals[c])+' × '+C.per+' = '+fmt(totals[c]*C.per)+' '+C.unit+'</span>';
-  b.addEventListener('click',function(){catOn[c]=!catOn[c];b.setAttribute('aria-pressed',String(catOn[c]));layout()});
-  li.appendChild(b); legendList.appendChild(li);
-});
-document.getElementById('legendFoot').textContent='โซดา + น้ำ รวม '+fmt(totals.soda+totals.water)+' พาเลท = '+fmt((totals.soda+totals.water)*40)+' ลัง · แตะรายการเพื่อซ่อนหรือแสดงประเภท';
-var legend=document.getElementById('legend'); legend.open=window.innerWidth>640;
+function dl(label,val,cls){return '<div'+(cls&&cls.indexOf('wide')>-1?' class="wide"':'')+'><dt>'+label+'</dt><dd class="'+(cls||'')+'">'+val+'</dd></div>'}
+function refreshCard(){
+  var z=selected, stack=z&&z.kind==='stack';
+  $('zEdit').hidden=!stack; $('zStatic').hidden=stack;
+  if(!z){$('zName').textContent='ยังไม่ได้เลือก';$('zCat').textContent='รายละเอียด';$('zDot').style.background='var(--line)';$('zStatic').hidden=false;$('zStatic').textContent='แตะที่แถวหรือโซนในภาพเพื่อดูและแก้จำนวนพาเลท';return}
+  $('zName').textContent=z.name;
+  if(!stack){
+    var K={office:'ออฟฟิศ',deck:'ที่เก็บสินค้าชั้น 2',area:'พื้นที่ใช้งาน',bay:'ลานโหลดสินค้า',stairs:'บันได'};
+    $('zCat').textContent=K[z.kind]; $('zDot').style.background='var(--line)';
+    $('zStatic').textContent='ขนาดโดยประมาณ '+z.w.toFixed(1)+' × '+z.d.toFixed(1)+' ม.'+(z.elev?' · พื้นชั้น 2 สูงจากพื้น '+z.elev.toFixed(1)+' ม.':(z.h?' · สูง '+z.h.toFixed(1)+' ม.':''))+(z.kind==='stairs'?' · ขึ้นไปที่เก็บสินค้าชั้น 2':''); return;
+  }
+  var c=calc(z), s=stat(z), cat=CATS[z.cat];
+  var canExt=LN(c.totPos)<=z.maxLen+1e-6, shrinkPos=Math.max(1,c.totPos), canShr=c.over<=0&&shrinkPos<c.capPos, bt;
+  if(c.over>0)bt=canExt?'ยืนยัน · วางส่วนสีขาว '+c.over+' PL เป็นของจริง':'ขยายไม่ได้ เกินความยาวสูงสุด '+z.maxLen+' ม. (ล้น '+c.over+' PL)';
+  else if(canShr)bt='ยืนยัน · ลดขนาดช่องเหลือ '+LN(shrinkPos)+' ม. (คืนที่ว่าง '+(c.capPos-shrinkPos)+' ตำแหน่ง)';
+  else bt='ยืนยัน (ไม่มีการเปลี่ยนขนาดช่อง)';
+  $('btnConfirm').disabled=!((c.over>0&&canExt)||canShr); $('btnConfirm').textContent=bt;
+  $('zCat').textContent=cat.name; $('zDot').style.background='var(--'+z.cat+')';
+  if(document.activeElement!==inPL)inPL.value=z.pl;
+  if(document.activeElement!==inLen)inLen.value=z.len;
+  inLen.max=z.maxLen;
+  document.querySelectorAll('[data-zl]').forEach(function(b){b.setAttribute('aria-pressed',String(+b.dataset.zl===z.levels))});
+  $('gCount').textContent='('+z.g.zs.length+' ช่อง)';
+  var w=z.axis==='x'?z.len:z.D, d=z.axis==='x'?z.D:z.len;
+  $('zDl').innerHTML=
+    dl('ขนาดช่อง',w.toFixed(1)+' × '+d.toFixed(1)+' ม.')+
+    dl('ตำแหน่งบนพื้น',c.pos+' จาก '+capPos(z))+
+    dl('วางได้จริง',c.placed+' PL')+
+    dl('รองรับสูงสุด',c.cap+' PL')+
+    dl('สถานะ','<span class="st '+s.k+'">'+s.long+'</span>','wide th')+
+    dl('สินค้า',fmt(c.placed*cat.per)+' '+cat.unit+' ('+cat.per+' ต่อพาเลท)','wide th');
+  Array.prototype.forEach.call(document.querySelectorAll('.lr'),function(r){r.classList.toggle('on',r===z.ui.row)});
+}
 
-/* click to select (ignore drags) */
+function commit(list,fromList){
+  list.forEach(function(z){clampZ(z);updateZone(z)});
+  flushInstances(); refreshAll(); refreshCard(); updateSel(); save();
+}
+function targets(){return applyGroup.checked&&selected?selected.g.zs:[selected]}
+function setField(f,v){
+  if(!selected||selected.kind!=='stack')return;
+  var ts=targets(); ts.forEach(function(z){z[f]=v}); commit(ts);
+}
+inPL.addEventListener('input',function(){setField('pl',Math.max(0,Math.round(+inPL.value)||0))});
+inLen.addEventListener('input',function(){var v=+inLen.value;if(v>0)setField('len',v)});
+inLen.addEventListener('change',function(){refreshCard()});
+$('plMinus').addEventListener('click',function(){if(selected)setField('pl',Math.max(0,selected.pl-1))});
+$('plPlus').addEventListener('click',function(){if(selected)setField('pl',selected.pl+1)});
+document.querySelectorAll('[data-zl]').forEach(function(b){b.addEventListener('click',function(){setField('levels',+b.dataset.zl)})});
+$('btnConfirm').addEventListener('click',function(){
+  if(!selected||selected.kind!=='stack')return;
+  var ts=targets(); ts.forEach(function(z){var c=calc(z);if(c.over>0)z.len=Math.max(z.len,LN(c.totPos));else if(Math.max(1,c.totPos)<c.capPos)z.len=LN(Math.max(1,c.totPos))}); commit(ts);
+});
+document.querySelectorAll('[data-gl]').forEach(function(b){b.addEventListener('click',function(){
+  viewLv=+b.dataset.gl; var st=zones.filter(function(z){return z.kind==='stack'});
+  st.forEach(updateZone); flushInstances(); refreshAll(); refreshCard(); updateSel();
+})});
+$('reset').addEventListener('click',function(){
+  var st=zones.filter(function(z){return z.kind==='stack'});
+  st.forEach(function(z){z.pl=z.pl0;z.levels=z.lv0;z.len=z.len0}); commit(st);
+});
+$('tgOver').addEventListener('click',function(e){showOver=!showOver;e.currentTarget.setAttribute('aria-pressed',String(showOver));zones.forEach(placeZone);flushInstances()});
+$('tgLabels').addEventListener('click',function(e){showLabels=!showLabels;e.currentTarget.setAttribute('aria-pressed',String(showLabels));dirty=true});
+
+function updateSel(){
+  var z=selected; if(!z){sel.visible=false;dirty=true;return}
+  var w,d,h;
+  if(z.kind==='stack'){w=z.axis==='x'?z.len:z.D;d=z.axis==='x'?z.D:z.len;h=BASE+z.levels*STEP+.2}
+  else{w=z.w;d=z.d;h=(z.elev||0)+(z.h||.3)+.2}
+  sel.scale.set(w,h,d); sel.position.set(cx(z.x0+w/2),h/2,cz(z.z0+d/2)); sel.visible=true; dirty=true;
+}
+function select(id,fromScene){
+  selected=id==null?null:zones[id]; updateSel(); refreshCard();
+  if(fromScene&&selected)$('panel').scrollTo({top:0});
+  dirty=true;
+}
+
+/* picking */
 var ray=new T.Raycaster(), ndc=new T.Vector2(), down=null;
 renderer.domElement.addEventListener('pointerdown',function(e){down={x:e.clientX,y:e.clientY}});
 renderer.domElement.addEventListener('pointerup',function(e){
-  if(!down)return; var moved=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(moved>5)return;
+  if(!down)return; var mv=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(mv>5)return;
   var r=glEl.getBoundingClientRect();
   ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
   ray.setFromCamera(ndc,camera);
-  var hits=ray.intersectObjects(pickables,false);
-  for(var i=0;i<hits.length;i++){
-    var h=hits[i], id=h.object.isInstancedMesh?h.object.userData.zones[h.instanceId]:h.object.userData.zone;
-    if(id!=null){select(id);return}
+  var hits=ray.intersectObjects(pickables,false), j, h, id;
+  for(j=0;j<hits.length;j++){
+    h=hits[j]; id=h.object.isInstancedMesh?slotZone[h.instanceId]:h.object.userData.zone;
+    if(id!=null){select(id,true);return}
   }
   select(null);
 });
 
-/* ---------- size, loop ---------- */
+/* ---------- camera views ---------- */
+var V3=function(x,y,z){return new T.Vector3(x,y,z)};
+var VIEWS={
+  iso:{t:V3(0,0,0),dir:V3(-.3,.8,.62),w:48,h:44},
+  top:{t:V3(0,0,0),dir:V3(0,1,.02),w:48,h:52,fov:14},
+  left:{t:V3(cx(4.3),1,cz(LZ+12)),dir:V3(.2,.75,.65),w:15,h:30},
+  right:{t:V3(16.8,1,-15),dir:V3(-.2,.75,.65),w:14,h:22},
+  mid:{t:V3(0,1,cz(18.4)),dir:V3(-.1,.8,.6),w:20,h:38},
+  dock:{t:V3(0,.5,17.9),dir:V3(0,.8,.6),w:46,h:20}
+};
+function pose(key){
+  var p=VIEWS[key], fov=p.fov||35, tf=Math.tan(T.MathUtils.degToRad(fov/2));
+  var dist=Math.max((p.h/2)/tf,(p.w/2)/(tf*camera.aspect))*1.25;
+  return {pos:p.t.clone().addScaledVector(p.dir.clone().normalize(),dist),target:p.t.clone(),fov:fov};
+}
+var tw=null, curView='iso';
+function fly(key,instant){
+  var ps=pose(key); curView=key;
+  if(instant){camera.fov=ps.fov;camera.updateProjectionMatrix();camera.position.copy(ps.pos);controls.target.copy(ps.target);controls.update();dirty=true;return}
+  tw={t0:performance.now(),d:800,f0:camera.fov,f1:ps.fov,p0:camera.position.clone(),p1:ps.pos,g0:controls.target.clone(),g1:ps.target};
+}
+function stepTween(now){
+  if(!tw)return;
+  var k=Math.min(1,(now-tw.t0)/tw.d), e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+  camera.position.lerpVectors(tw.p0,tw.p1,e); controls.target.lerpVectors(tw.g0,tw.g1,e); camera.fov=tw.f0+(tw.f1-tw.f0)*e; camera.updateProjectionMatrix();
+  if(k>=1)tw=null; dirty=true;
+}
+function setView(key){document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===key))})}
+controls.addEventListener('start',function(){tw=null;setView(null)});
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){fly(b.dataset.view);setView(b.dataset.view)})});
+
+/* ---------- size + loop ---------- */
 function resize(){
   var w=glEl.clientWidth||window.innerWidth, h=glEl.clientHeight||window.innerHeight;
   renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
-  document.documentElement.style.setProperty('--dock-h',document.getElementById('dock').offsetHeight+'px');
-  if(!tw&&curView&&document.querySelector('[data-view][aria-pressed="true"]'))fly(curView,true);
+  if(!tw&&document.querySelector('[data-view][aria-pressed="true"]'))fly(curView,true);
   dirty=true;
 }
 if(window.ResizeObserver)new ResizeObserver(resize).observe(glEl); else window.addEventListener('resize',resize);
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-
 function frame(now){
-  requestAnimationFrame(frame);
-  stepTween(now);
+  requestAnimationFrame(frame); stepTween(now);
   if(controls.update())dirty=true;
   if(dirty){dirty=false;renderer.render(scene,camera);updateLabels()}
 }
 
-layout(); applyTheme(); resize(); fly('iso',true); select(zones.filter(function(z){return z.row===1})[0].id);
+applyTheme(); refreshAll(); resize(); fly('iso',true);
+select(zones.filter(function(z){return z.key==='L1'})[0].id);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){dirty=true});
+window.__wh={zones:zones,calc:calc,palletGeo:palletGeo,palletMesh:palletMesh,dims:{PW:PW,PD:PD,PH:PH}};
 requestAnimationFrame(frame);
 })();
 </script>
