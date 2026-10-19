@@ -269,8 +269,8 @@ var SX_=fx(494)+LN(7)+PG, OZ=ZW+3*RP, OD=WZ-OZ, SR=fz(789)-fz(640)+2*RP;   /* of
 A('office','ออฟฟิศ',0,0,WX,fz(33),6.5);
 A('area','จุดซักล้าง',fx(44),fz(55),fx(176)-fx(44),fz(152)-fz(55));
 A('area','พัดลม โต๊ะเยี่ยม',fx(193),fz(55),fx(432)-fx(193),fz(152)-fz(55));
-/* repair + spare parts: two blocks of full-pallet cells (1.0 x 1.2 m, 3 rows deep = 4.0 m), one pallet below row 34; the spare block ends at the stair wall */
-var CROWS=3, CW=function(n){return n*PP-PG}, CD=CROWS*PD+(CROWS-1)*RG, CZ0=(TOP0+13*RP+PD)+PD, DOORZ=29.9, DOORH=2.0, DOORW=1.4, SPX=fx(1294)-CW(2), RPX=WX-WALL-7.5;
+/* repair + spare parts: two blocks of full-pallet cells (1.0 x 1.2 m, 3 rows deep = 4.0 m), level with the first step of the stairs; the spare block ends at the stair wall */
+var CROWS=3, CW=function(n){return n*PP-PG}, CD=CROWS*PD+(CROWS-1)*RG, CZ0=OZ-SR, DOORZ=29.9, DOORH=2.0, DOORW=1.4, SPX=fx(1294)-CW(2), RPX=WX-WALL-7.5;
 A('area','จุดซ่อมสินค้า',RPX,CZ0,CW(3),CD); zones[zones.length-1].cells=[3,CROWS];
 A('area','อะไหล่ / หน่วยย่อยสินค้า',SPX,CZ0,CW(2),CD); zones[zones.length-1].cells=[2,CROWS];
 A('stairs','บันได ขึ้นที่เก็บสินค้าชั้น 2',fx(1294),OZ-SR,WX-fx(1294),SR,3.2);
@@ -409,6 +409,39 @@ zones.forEach(function(z){
   }
   reg(m);
 });
+/* forklifts (about 1.2 x 3.0 m, 2.1 m high with overhead guard) */
+var flMats={body:new T.MeshLambertMaterial({color:0xF0A500}),dark:new T.MeshLambertMaterial({color:0x2B2F33}),steel:new T.MeshLambertMaterial({color:0x6B737B})};
+function forklift(x,z,rot){
+  var g=new T.Group();
+  function part(w,h,d,px,py,pz,m){var q=new T.Mesh(box,m);q.scale.set(w,h,d);q.position.set(px,py,pz);q.castShadow=true;q.receiveShadow=true;g.add(q)}
+  part(1.5,.75,1.05,-.45,.68,0,flMats.body);            /* chassis */
+  part(.55,.95,1.05,-1.2,.78,0,flMats.body);            /* counterweight */
+  part(.6,.1,.7,-.55,1.2,0,flMats.dark);                /* seat */
+  [[-.95,-.5],[-.95,.5],[.05,-.5],[.05,.5]].forEach(function(c){part(.06,1.0,.06,c[0],1.7,c[1],flMats.dark)});   /* guard posts */
+  part(1.15,.05,1.1,-.45,2.2,0,flMats.dark);            /* guard roof */
+  [-.3,.3].forEach(function(c){part(.08,2.0,.08,.45,1.05,c,flMats.steel)});   /* mast */
+  part(.1,.4,.9,.5,.55,0,flMats.steel);                 /* carriage */
+  [-.3,.3].forEach(function(c){part(1.1,.05,.12,1.05,.22,c,flMats.steel)});    /* forks */
+  [[.15,-.52],[.15,.52],[-1.0,-.52],[-1.0,.52]].forEach(function(c){
+    var w=new T.Mesh(new T.CylinderGeometry(.3,.3,.22,16),flMats.dark); w.rotation.x=Math.PI/2; w.position.set(c[0],.3,c[1]); w.castShadow=true; g.add(w)});
+  g.position.set(cx(x),0,cz(z)); g.rotation.y=rot; scene.add(g); return g;
+}
+function addCat(g,px,py,pz){   /* a white-and-ginger cat asleep on the guard roof (drawn about 1.3x life size so it can be seen) */
+  var c=new T.Group(), W=new T.MeshLambertMaterial({color:0xF4F0E8}), O=new T.MeshLambertMaterial({color:0xD9893A}), K=new T.MeshLambertMaterial({color:0x2B2F33});
+  function ell(m,sx,sy,sz,x,y,z){var q=new T.Mesh(new T.SphereGeometry(1,16,12),m);q.scale.set(sx,sy,sz);q.position.set(x,y,z);q.castShadow=true;c.add(q);return q}
+  ell(W,.15,.11,.27,0,.11,0);              /* body */
+  ell(O,.155,.07,.13,0,.15,-.1);           /* ginger patch on the back */
+  ell(O,.1,.06,.09,.05,.17,.1);
+  ell(W,.115,.1,.1,0,.1,.3);               /* head */
+  ell(O,.06,.06,.05,-.07,.14,.31);         /* patch on the head */
+  [-.06,.06].forEach(function(x){var e=new T.Mesh(new T.ConeGeometry(.04,.08,4),x<0?O:W);e.position.set(x,.2,.3);e.castShadow=true;c.add(e)});   /* ears */
+  [-.04,.04].forEach(function(x){var e=new T.Mesh(box,K);e.scale.set(.03,.008,.005);e.position.set(x,.12,.395);c.add(e)});                       /* closed eyes */
+  var t=new T.Mesh(new T.CylinderGeometry(.025,.02,.4,8),W); t.rotation.z=Math.PI/2; t.position.set(.2,.05,-.2); t.castShadow=true; c.add(t);      /* tail curled round the body */
+  c.scale.setScalar(1.3); c.position.set(px,py,pz); c.rotation.y=-.35; g.add(c);
+}
+forklift(4.2,34.3,0);   /* parked in front of row 20 */
+var fl2=forklift(RPX+CW(3)/2,CZ0+CD+.75,Math.PI/2);  /* beside the repair / stairs corner, with its forks pushed into the repair point */
+addCat(fl2,-.45,2.225,0);
 var dashArr=[];
 zones.forEach(function(z){
   if(z.kind!=='bay'&&z.kind!=='area')return;
@@ -586,7 +619,7 @@ function updateLabels(){
 }
 
 /* ---------- persistence ---------- */
-var LS='wh3d-v24';
+var LS='wh3d-v29';
 function save(){try{var o={};zones.forEach(function(z){if(z.kind==='stack')o[z.key]=[z.pl,z.levels,z.len]});localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
 function clampZ(z){
   z.pl=Math.max(0,Math.min(9999,Math.round(+z.pl)||0)); z.levels=Math.max(1,Math.min(MAXL,Math.round(+z.levels)||3));
