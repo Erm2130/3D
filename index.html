@@ -283,7 +283,7 @@ var BX=[0,.2456,.4271,.6903,1].map(function(f){return .5+f*YL});
 ['ลานโหลดรถปลีก 1','ลานโหลดรถปลีก 2','ลานโหลดรถปลีก 3','ลานโหลด'].forEach(function(n,k){A('bay',n,BX[k],WZ,BX[k+1]-BX[k],YD)});
 
 g=G('L','แถว 1–20','beer');
-for(i=1;i<=20;i++)S(g,{label:String(i),axis:'x',x0:WALL,z0:LZ+(i-1)*RP,len:7.5,pl:21,lab:{x:WALL+7.5+.6,z:LZ+(i-1)*RP+PD/2}});
+for(i=1;i<=20;i++)S(g,{label:String(i),axis:'x',lend:true,x0:WALL,z0:LZ+(i-1)*RP,len:7.5,pl:21,lab:{x:WALL+7.5+.6,z:LZ+(i-1)*RP+PD/2}});
 g=G('R','แถว 21–34','beer');
 for(i=21;i<=34;i++)S(g,{label:String(i),axis:'x',x0:WX-WALL-7.5,rev:true,xr:WX-WALL,z0:TOP0+(i-21)*RP,len:7.5,pl:21,lab:{x:WX-WALL-7.5-.6,z:TOP0+(i-21)*RP+PD/2}});
 var MID0=fx(494), MIDW=11*PD+10*RG;   /* middle section: every block spans the same width */
@@ -298,11 +298,11 @@ for(i=0;i<10;i++){
   S(g,{label:i===9?'58*':String(50+i),name:i===9?'แถวที่ 58 (ช่องท้าย)':null,axis:'z',x0:c2x,z0:Z50,len:LN(i===0?4:5),pl:i===9?0:(i===0?12:15),lab:{x:c2x+PD/2,z:Z50+LN(5)+.6}});
 }
 g=G('W','น้ำ 59–64','water');
-for(i=0;i<6;i++)S(g,{label:String(59+i),name:'แถวที่ '+(59+i)+' (น้ำ)',axis:'x',x0:MID0,z0:ZW+i*RP,len:LN(7),pl:21,lab:{x:MID0-.6,z:ZW+i*RP+PD/2}});
+for(i=0;i<6;i++)S(g,{label:String(59+i),name:'แถวที่ '+(59+i)+' (น้ำ)',axis:'x',x0:MID0,rev:true,xr:MID0+LN(7),z0:ZW+i*RP,len:LN(7),pl:21,lab:{x:MID0-.6,z:ZW+i*RP+PD/2}});
 g=G('S','โซดา 60–69','soda');
 var SX=MID0+LN(7)+PG;
-S(g,{label:'60',name:'แถวที่ 60 (โซดา)',axis:'x',x0:SX,z0:ZW,len:LN(3),pl:9,lab:{x:SX+LN(3)+.6,z:ZW+PD/2}});
-for(i=0;i<5;i++)S(g,{label:String(65+i),name:'แถวที่ '+(65+i)+' (โซดา)',axis:'x',x0:SX,z0:ZW+(i+1)*RP,len:LN(6),pl:18,lab:{x:SX+LN(6)+.6,z:ZW+(i+1)*RP+PD/2}});
+S(g,{label:'60',name:'แถวที่ 60 (โซดา)',axis:'x',lend:true,x0:SX,z0:ZW,len:LN(3),pl:9,lab:{x:SX+LN(3)+.6,z:ZW+PD/2}});
+for(i=0;i<5;i++)S(g,{label:String(65+i),name:'แถวที่ '+(65+i)+' (โซดา)',axis:'x',lend:true,x0:SX,z0:ZW+(i+1)*RP,len:LN(6),pl:18,lab:{x:SX+LN(6)+.6,z:ZW+(i+1)*RP+PD/2}});
 
 /* slots: every zone owns pre-allocated pallet slots (position x level) */
 var nSlots=0, slotZone=[], slotJ=[];
@@ -513,7 +513,8 @@ function placeZone(z){
 }
 function updateZone(z){
   if(z.kind!=='stack')return;
-  if(z.rev){z.x0=z.xr-z.len; z.lab.x=z.x0-.6; if(z.tag)z.tag.pos.x=cx(z.lab.x)}   /* rows 21-34 grow away from the wall, towards the aisle */
+  if(z.rev){z.x0=z.xr-z.len; z.lab.x=z.x0-.6; if(z.tag)z.tag.pos.x=cx(z.lab.x)}   /* rows 21-34 and water grow towards their number side */
+  if(z.lend){z.lab.x=z.x0+z.len+.6; if(z.tag)z.tag.pos.x=cx(z.lab.x)}   /* labels at the row end follow it */
   var c=calc(z), w=z.axis==='x'?z.len:z.D, d=z.axis==='x'?z.D:z.len;
   z.strip.scale.set(w,.05,d); z.strip.position.set(cx(z.x0+w/2),.025,cz(z.z0+d/2));
   z.edge.scale.copy(z.strip.scale); z.edge.position.copy(z.strip.position);
@@ -585,7 +586,7 @@ function updateLabels(){
 }
 
 /* ---------- persistence ---------- */
-var LS='wh3d-v23';
+var LS='wh3d-v24';
 function save(){try{var o={};zones.forEach(function(z){if(z.kind==='stack')o[z.key]=[z.pl,z.levels,z.len]});localStorage.setItem(LS,JSON.stringify(o))}catch(e){}}
 function clampZ(z){
   z.pl=Math.max(0,Math.min(9999,Math.round(+z.pl)||0)); z.levels=Math.max(1,Math.min(MAXL,Math.round(+z.levels)||3));
